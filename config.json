@@ -1,0 +1,18 @@
+{
+    "api_key": "gbnKEZ6dIdnngq3pMzDti0vpI1vHcHLIvY3SB6muSQZr1cwm5IPtiIhe83J477Uu",
+    "secret_key": "4xx4EyeTSW8CW4PtIdw6oDaCCLOyIhLWkPTYwDoYaBfsWaSP0Kb1zfsk3JSHVlvB",
+    "base_asset": "ETH",
+    "quote_asset": "BUSD",
+    "order_qty": 0.002,
+    "tick_size": 0.01,
+    "n_spreads": 80,
+    "estimate_window": 90000,
+    "period": 10000,
+    "sigma_tick_period": 1000,
+    "gamma": 0.1,
+    "sigma_multiplier": 1,
+    "stoploss": 0.00483,
+    "stoploss_sleep": 300000,
+    "stopprofit": 0.00917,
+    "q_max": 30
+}
