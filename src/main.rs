@@ -56,19 +56,10 @@ async fn main() {
                 });
 
                 account_ws.connect(&answer.listen_key).await.unwrap();
-                if let Err(e) = account_ws.event_loop(&account_keep_running).await {
+                while let Err(e) = account_ws.event_loop(&account_keep_running).await {
                     warn!("account_ws Error: {}, starting reconnect...", e);
 
                     account_ws.connect(&answer.listen_key).await.unwrap();
-                    if let Err(e) = account_ws.event_loop(&account_keep_running).await {
-                        warn!("account_ws Error: {}, second time failed, starting reconnect...", e);
-
-                        account_ws.connect(&answer.listen_key).await.unwrap();
-                        if let Err(e) = account_ws.event_loop(&account_keep_running).await {
-                            warn!("account_ws Error: {}, third time failed, Exit program!", e);
-                            std::process::exit(0x0100);
-                        }
-                    }
                 }
             }
             Err(_e) => panic!("Not able to start an User Stream (Check your API_KEY"),
@@ -81,19 +72,10 @@ async fn main() {
         let mut book_ws: FuturesWebSockets<FuturesWebsocketEvent> = FuturesWebSockets::new(book_tx);
         book_ws.connect(&sub).await.unwrap();
 
-        if let Err(e) = book_ws.event_loop(&book_keep_running).await {
+        while let Err(e) = book_ws.event_loop(&book_keep_running).await {
             warn!("book_ws Error: {}, starting reconnect...", e);
 
             book_ws.connect(&sub).await.unwrap();
-            if let Err(e) = book_ws.event_loop(&book_keep_running).await {
-                warn!("book_ws Error: {}, second time failed, starting reconnect...", e);
-
-                book_ws.connect(&sub).await.unwrap();
-                if let Err(e) = book_ws.event_loop(&book_keep_running).await {
-                    warn!("book_ws Error: {}, third time failed, Exit program!", e);
-                    std::process::exit(0x0100);
-                }
-            }
         }
     });
 

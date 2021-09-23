@@ -13,9 +13,9 @@ use exrs::binance_f::{
     util::get_timestamp,
     ws_model::{AccountUpdateEvent, BookTickerEvent, FuturesWebsocketEvent},
 };
+use log::{debug, info, warn};
 use std::collections::VecDeque;
 use tokio::sync::mpsc;
-use log::{debug, info, warn};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Spread {
@@ -54,7 +54,6 @@ impl StrategyData {
     }
 
     pub fn push(&mut self, event: Box<BookTickerEvent>) {
-
         if self.timestamp.len() > self.capacity - 1 {
             self.timestamp.pop_front();
             self.ask_price.pop_front();
