@@ -58,11 +58,16 @@ async fn main() {
                 account_ws.connect(&answer.listen_key).await.unwrap();
                 if let Err(e) = account_ws.event_loop(&account_keep_running).await {
                     warn!("account_ws Error: {}, starting reconnect...", e);
-                    account_ws.connect(&answer.listen_key).await.unwrap();
 
+                    account_ws.connect(&answer.listen_key).await.unwrap();
                     if let Err(e) = account_ws.event_loop(&account_keep_running).await {
-                        warn!("account_ws Error: {}, second time failed, Exit program!", e);
-                        std::process::exit(0x0100);
+                        warn!("account_ws Error: {}, second time failed, starting reconnect...", e);
+
+                        account_ws.connect(&answer.listen_key).await.unwrap();
+                        if let Err(e) = account_ws.event_loop(&account_keep_running).await {
+                            warn!("account_ws Error: {}, third time failed, Exit program!", e);
+                            std::process::exit(0x0100);
+                        }
                     }
                 }
             }
@@ -78,11 +83,16 @@ async fn main() {
 
         if let Err(e) = book_ws.event_loop(&book_keep_running).await {
             warn!("book_ws Error: {}, starting reconnect...", e);
-            book_ws.connect(&sub).await.unwrap();
 
+            book_ws.connect(&sub).await.unwrap();
             if let Err(e) = book_ws.event_loop(&book_keep_running).await {
-                warn!("book_ws Error: {}, second time failed, Exit program!", e);
-                std::process::exit(0x0100);
+                warn!("book_ws Error: {}, second time failed, starting reconnect...", e);
+
+                book_ws.connect(&sub).await.unwrap();
+                if let Err(e) = book_ws.event_loop(&book_keep_running).await {
+                    warn!("book_ws Error: {}, third time failed, Exit program!", e);
+                    std::process::exit(0x0100);
+                }
             }
         }
     });
