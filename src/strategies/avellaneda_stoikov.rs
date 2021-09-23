@@ -467,11 +467,8 @@ impl AvellanedaStoikov {
     }
 
     fn calculate_tv_mean(&mut self) -> Option<f64> {
-        let start = tokio::time::Instant::now();
         let sum: f64 = self.strategy_data.tv.iter().sum();
         let count = self.strategy_data.tv.len();
-
-        info!("tv_mean {:?}, {}", start.elapsed(), count);
 
         match count {
             positive if positive > 0 => Some(sum / count as f64),
