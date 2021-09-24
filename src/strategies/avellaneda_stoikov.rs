@@ -267,7 +267,7 @@ impl AvellanedaStoikov {
 
                     match self.account_client.cancel_all_open_orders(&self.pair).await {
                         Ok(answer) => info!("Cancel all open orders: {:?}", answer),
-                        Err(err) => info!("Error: {:?}", err),
+                        Err(err) => warn!("Error: {:?}", err),
                     }
 
                     if self.position.position_amount > 0f64 {
@@ -277,7 +277,7 @@ impl AvellanedaStoikov {
                             .await
                         {
                             Ok(answer) => info!("stop loss market sell {:?}", answer),
-                            Err(err) => info!("Error: {}", err),
+                            Err(err) => warn!("Error: {}", err),
                         }
                     } else {
                         match self
@@ -286,7 +286,7 @@ impl AvellanedaStoikov {
                             .await
                         {
                             Ok(answer) => info!("stop loss market buy {:?}", answer),
-                            Err(err) => info!("Error: {}", err),
+                            Err(err) => warn!("Error: {}", err),
                         }
                     }
 
@@ -305,7 +305,7 @@ impl AvellanedaStoikov {
 
                     match self.account_client.cancel_all_open_orders(&self.pair).await {
                         Ok(answer) => info!("Cancel all open orders: {:?}", answer),
-                        Err(err) => info!("Error: {:?}", err),
+                        Err(err) => warn!("Error: {:?}", err),
                     }
 
                     if self.position.position_amount > 0f64 {
@@ -321,7 +321,7 @@ impl AvellanedaStoikov {
                             .await
                         {
                             Ok(answer) => info!("Limit sell {:?}", answer),
-                            Err(err) => info!("Error: {}", err),
+                            Err(err) => warn!("Error: {}", err),
                         }
                     } else if self.position.position_amount < 0f64 {
                         match self
@@ -336,7 +336,7 @@ impl AvellanedaStoikov {
                             .await
                         {
                             Ok(answer) => info!("Limit buy {:?}", answer),
-                            Err(err) => info!("Error: {}", err),
+                            Err(err) => warn!("Error: {}", err),
                         }
                     }
                 } else if self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000) {
@@ -358,7 +358,7 @@ impl AvellanedaStoikov {
 
                         match account_client.cancel_all_open_orders(&pair).await {
                             Ok(answer) => info!("Cancel all open orders: {:?}", answer),
-                            Err(err) => info!("Error: {:?}", err),
+                            Err(err) => warn!("Error: {:?}", err),
                         }
 
                         let sell_price = util::round_to(last_wap + spread.ask, tick_round);
@@ -381,7 +381,7 @@ impl AvellanedaStoikov {
                             .await
                         {
                             Ok(answer) => info!("Limit buy {:?}", answer),
-                            Err(err) => info!("Error: {}", err),
+                            Err(err) => warn!("Error: {}", err),
                         }
 
                         match account_client
@@ -395,7 +395,7 @@ impl AvellanedaStoikov {
                             .await
                         {
                             Ok(answer) => info!("Limit sell {:?}", answer),
-                            Err(err) => info!("Error: {}", err),
+                            Err(err) => warn!("Error: {}", err),
                         }
                     });
 
