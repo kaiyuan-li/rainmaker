@@ -309,34 +309,23 @@ impl AvellanedaStoikov {
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
-                            .limit_sell(
-                                &self.pair,
-                                self.position.position_amount,
-                                self.strategy_data.ask_price.back().unwrap() + self.tick_size,
-                                PositionSide::Both,
-                                TimeInForce::GTC,
-                            )
+                            .market_sell(&self.pair, self.position.position_amount)
                             .await
                         {
-                            Ok(answer) => info!("Limit sell {:?}", answer),
+                            Ok(answer) => info!("stop loss market sell {:?}", answer),
                             Err(err) => warn!("Error: {}", err),
                         }
-                    } else if self.position.position_amount < 0f64 {
+                    } else {
                         match self
                             .account_client
-                            .limit_buy(
-                                &self.pair,
-                                self.position.position_amount.abs(),
-                                self.strategy_data.bid_price.back().unwrap() - self.tick_size,
-                                PositionSide::Both,
-                                TimeInForce::GTC,
-                            )
+                            .market_buy(&self.pair, self.position.position_amount.abs())
                             .await
                         {
-                            Ok(answer) => info!("Limit buy {:?}", answer),
+                            Ok(answer) => info!("stop loss market buy {:?}", answer),
                             Err(err) => warn!("Error: {}", err),
                         }
                     }
+
                 } else if self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000) {
                     debug!(
                         "timer: {}, now - {} = {}",
