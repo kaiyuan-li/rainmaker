@@ -359,8 +359,7 @@ impl AvellanedaStoikov {
                         debug!(
                             "wap: {:?}, spread: {:?}, {:?}",
                             last_wap,
-                            spread,
-                            (buy_a, buy_k, sell_a, sell_k)
+                            spread
                         );
 
                         match account_client.cancel_all_open_orders(&pair).await {
@@ -486,8 +485,10 @@ impl AvellanedaStoikov {
         let q_fix = self.position.position_amount / self.order_qty;
 
         info!(
-            "wap: {:?} sigma: {:?}, sigma_multiplier {:?}, sigma_fix {:?}, q {:?}, q_fix {:?}",
-            wap, self.sigma, self.sigma_multiplier, sigma_fix, self.position.position_amount, q_fix
+            "wap: {} sigma: {}, sigma_multiplier {}, sigma_fix {}, q {}, q_fix {}, 
+            buy_k: {}, buy_a: {}, sell_k {}, sell_a {}",
+            wap, self.sigma, self.sigma_multiplier, sigma_fix, self.position.position_amount, q_fix,
+            self.buy_k, self.buy_a, self.sell_k, self.sell_a
         );
 
         let bid = ((1.0) + self.gamma / self.sell_k).ln() / self.gamma
