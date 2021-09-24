@@ -295,9 +295,7 @@ impl AvellanedaStoikov {
                     self.in_stoploss = true;
 
                     self.timer = data.transaction_time / 1e3 as u64;
-                } else if self.unrealized_pnl > self.stopprofit
-                    && self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000)
-                {
+                } else if self.unrealized_pnl > self.stopprofit {
                     warn!(
                         "unrealized_pnl: {:?}, bigger than stopprofit: {:?}",
                         self.unrealized_pnl, self.stopprofit
@@ -314,7 +312,7 @@ impl AvellanedaStoikov {
                             .limit_sell(
                                 &self.pair,
                                 self.position.position_amount,
-                                *self.strategy_data.ask_price.back().unwrap(),
+                                self.strategy_data.ask_price.back().unwrap() + self.tick_size,
                                 PositionSide::Both,
                                 TimeInForce::GTC,
                             )
@@ -329,7 +327,7 @@ impl AvellanedaStoikov {
                             .limit_buy(
                                 &self.pair,
                                 self.position.position_amount.abs(),
-                                *self.strategy_data.bid_price.back().unwrap(),
+                                self.strategy_data.bid_price.back().unwrap() - self.tick_size,
                                 PositionSide::Both,
                                 TimeInForce::GTC,
                             )
