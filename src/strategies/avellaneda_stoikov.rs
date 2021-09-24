@@ -356,12 +356,6 @@ impl AvellanedaStoikov {
                     actix_rt::spawn(async move {
                         debug!("on_ticker thread");
 
-                        debug!(
-                            "wap: {:?}, spread: {:?}, {:?}",
-                            last_wap,
-                            spread
-                        );
-
                         match account_client.cancel_all_open_orders(&pair).await {
                             Ok(answer) => info!("Cancel all open orders: {:?}", answer),
                             Err(err) => info!("Error: {:?}", err),
@@ -371,7 +365,10 @@ impl AvellanedaStoikov {
 
                         let buy_price = util::round_to(last_wap - spread.bid, tick_round);
 
-                        debug!("sell_price {}, buy_price {}", sell_price, buy_price);
+                        debug!(
+                            "wap: {}, spread: {}, sell_price {}, buy_price {}", 
+                            last_wap, spread,  sell_price, buy_price
+                        );
 
                         match account_client
                             .limit_buy(
