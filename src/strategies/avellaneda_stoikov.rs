@@ -366,8 +366,8 @@ impl AvellanedaStoikov {
                         let buy_price = util::round_to(last_wap - spread.bid, tick_round);
 
                         debug!(
-                            "wap: {}, spread: {}, sell_price {}, buy_price {}", 
-                            last_wap, spread,  sell_price, buy_price
+                            "wap: {}, ask_spread: {}, bid_spread: {}, sell_price {}, buy_price {}",
+                            last_wap, spread.ask, spread.bid, sell_price, buy_price
                         );
 
                         match account_client
@@ -484,8 +484,16 @@ impl AvellanedaStoikov {
         info!(
             "wap: {} sigma: {}, sigma_multiplier {}, sigma_fix {}, q {}, q_fix {}, 
             buy_k: {}, buy_a: {}, sell_k {}, sell_a {}",
-            wap, self.sigma, self.sigma_multiplier, sigma_fix, self.position.position_amount, q_fix,
-            self.buy_k, self.buy_a, self.sell_k, self.sell_a
+            wap,
+            self.sigma,
+            self.sigma_multiplier,
+            sigma_fix,
+            self.position.position_amount,
+            q_fix,
+            self.buy_k,
+            self.buy_a,
+            self.sell_k,
+            self.sell_a
         );
 
         let bid = ((1.0) + self.gamma / self.sell_k).ln() / self.gamma
