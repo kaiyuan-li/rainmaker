@@ -256,10 +256,11 @@ impl AvellanedaStoikov {
                 }
 
                 info!(
-                    "unrealized_pnl: {:?}, -stoploss: {:?}, stoploss?: {}",
+                    "unrealized_pnl: {}, -stoploss: {}, stoploss?: {}, stopprofit: {}",
                     self.unrealized_pnl,
                     -self.stoploss,
-                    self.unrealized_pnl < -self.stoploss
+                    self.unrealized_pnl < -self.stoploss,
+                    self.stopprofit
                 );
 
                 if self.unrealized_pnl < -self.stoploss {
@@ -267,7 +268,7 @@ impl AvellanedaStoikov {
 
                     match self.account_client.cancel_all_open_orders(&self.pair).await {
                         Ok(answer) => info!("Cancel all open orders: {:?}", answer),
-                        Err(err) => warn!("Error: {:?}", err),
+                        Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                     }
 
                     if self.position.position_amount > 0f64 {
@@ -276,8 +277,8 @@ impl AvellanedaStoikov {
                             .market_sell(&self.pair, self.position.position_amount)
                             .await
                         {
-                            Ok(answer) => info!("stop loss market sell {:?}", answer),
-                            Err(err) => warn!("Error: {}", err),
+                            Ok(answer) => info!("Stop loss market sell {:?}", answer),
+                            Err(err) => warn!("Stop loss market sell Error: {}", err),
                         }
                     } else {
                         match self
@@ -285,8 +286,8 @@ impl AvellanedaStoikov {
                             .market_buy(&self.pair, self.position.position_amount.abs())
                             .await
                         {
-                            Ok(answer) => info!("stop loss market buy {:?}", answer),
-                            Err(err) => warn!("Error: {}", err),
+                            Ok(answer) => info!("Stop loss market buy {:?}", answer),
+                            Err(err) => warn!("Stop loss market buy Error: {}", err),
                         }
                     }
 
@@ -303,7 +304,7 @@ impl AvellanedaStoikov {
 
                     match self.account_client.cancel_all_open_orders(&self.pair).await {
                         Ok(answer) => info!("Cancel all open orders: {:?}", answer),
-                        Err(err) => warn!("Error: {:?}", err),
+                        Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                     }
 
                     if self.position.position_amount > 0f64 {
@@ -312,8 +313,8 @@ impl AvellanedaStoikov {
                             .market_sell(&self.pair, self.position.position_amount)
                             .await
                         {
-                            Ok(answer) => info!("stop loss market sell {:?}", answer),
-                            Err(err) => warn!("Error: {}", err),
+                            Ok(answer) => info!("Stop loss market sell {:?}", answer),
+                            Err(err) => warn!("Stop loss market sell Error: {}", err),
                         }
                     } else {
                         match self
@@ -321,11 +322,10 @@ impl AvellanedaStoikov {
                             .market_buy(&self.pair, self.position.position_amount.abs())
                             .await
                         {
-                            Ok(answer) => info!("stop loss market buy {:?}", answer),
-                            Err(err) => warn!("Error: {}", err),
+                            Ok(answer) => info!("Stop loss market buy {:?}", answer),
+                            Err(err) => warn!("Stop loss market buy Error: {}", err),
                         }
                     }
-
                 } else if self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000) {
                     debug!(
                         "timer: {}, now - {} = {}",
@@ -345,7 +345,7 @@ impl AvellanedaStoikov {
 
                         match account_client.cancel_all_open_orders(&pair).await {
                             Ok(answer) => info!("Cancel all open orders: {:?}", answer),
-                            Err(err) => warn!("Error: {:?}", err),
+                            Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                         }
 
                         let sell_price = util::round_to(last_wap + spread.ask, tick_round);
@@ -368,7 +368,7 @@ impl AvellanedaStoikov {
                             .await
                         {
                             Ok(answer) => info!("Limit buy {:?}", answer),
-                            Err(err) => warn!("Error: {}", err),
+                            Err(err) => warn!("Limit buy Error: {}", err),
                         }
 
                         match account_client
@@ -382,7 +382,7 @@ impl AvellanedaStoikov {
                             .await
                         {
                             Ok(answer) => info!("Limit sell {:?}", answer),
-                            Err(err) => warn!("Error: {}", err),
+                            Err(err) => warn!("Limit sell Error: {}", err),
                         }
                     });
 
@@ -469,18 +469,12 @@ impl AvellanedaStoikov {
         let q_fix = self.position.position_amount / self.order_qty;
 
         info!(
-            "wap: {} sigma: {}, sigma_multiplier {}, sigma_fix {}, q {}, q_fix {}, 
-            buy_k: {}, buy_a: {}, sell_k {}, sell_a {}",
-            wap,
-            self.sigma,
-            self.sigma_multiplier,
-            sigma_fix,
-            self.position.position_amount,
-            q_fix,
-            self.buy_k,
-            self.buy_a,
-            self.sell_k,
-            self.sell_a
+            "wap: {} sigma: {}, sigma_multiplier {}, sigma_fix {}, q {}, q_fix {}",
+            wap, self.sigma, self.sigma_multiplier, sigma_fix, self.position.position_amount, q_fix,
+        );
+        info!(
+            "buy_k: {}, buy_a: {}, sell_k {}, sell_a {}",
+            self.buy_k, self.buy_a, self.sell_k, self.sell_a
         );
 
         let bid = ((1.0) + self.gamma / self.sell_k).ln() / self.gamma
