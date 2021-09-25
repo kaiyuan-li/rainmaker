@@ -468,13 +468,13 @@ impl AvellanedaStoikov {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
 
         let mut parkinson_hv = 0f64;
-        for chunk in wap_vec.chunks(100) {
+        for chunk in wap_vec.chunks(50) {
             let hl =  (chunk.iter().cloned().fold(0f64/0f64, f64::max) /
                             chunk.iter().cloned().fold(0f64/0f64, f64::min)).ln();
             let res = hl.powi(2);
             parkinson_hv += res;
         }
-        let res =  (parkinson_hv / 4. * 10. * (2f64.ln())).sqrt();
+        let res =  ( parkinson_hv / (4. * 10. * (2f64.ln())) ).sqrt();
 
         Some(res)
     }
