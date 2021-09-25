@@ -326,6 +326,10 @@ impl AvellanedaStoikov {
                             Err(err) => warn!("Stop loss market buy Error: {}", err),
                         }
                     }
+
+                    self.unrealized_pnl = 0f64;
+
+                    self.timer = data.transaction_time / 1e3 as u64;
                 } else if self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000) {
                     debug!(
                         "timer: {}, now - {} = {}",
