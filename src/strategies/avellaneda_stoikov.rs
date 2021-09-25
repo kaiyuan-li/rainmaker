@@ -296,7 +296,7 @@ impl AvellanedaStoikov {
                     self.in_stoploss = true;
 
                     self.timer = data.transaction_time / 1e3 as u64;
-                } else if self.unrealized_pnl > self.stopprofit {
+                } else if self.unrealized_pnl > self.stopprofit && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000)) {
                     warn!(
                         "unrealized_pnl: {:?}, bigger than stopprofit: {:?}",
                         self.unrealized_pnl, self.stopprofit
