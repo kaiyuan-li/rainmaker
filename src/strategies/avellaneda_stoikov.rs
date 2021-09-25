@@ -463,11 +463,29 @@ impl AvellanedaStoikov {
         }
     }
 
+    /// https://github.com/TommasoBelluzzo/HistoricalVolatility
+    fn calculate_p_volatility(&mut self) -> Option<f64> {
+        let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
+
+        let mut parkinson_hv = 0f64;
+        for chunk in wap_vec.chunks(100) {
+            let hl =  (chunk.iter().cloned().fold(0f64/0f64, f64::max) /
+                            chunk.iter().cloned().fold(0f64/0f64, f64::min)).ln();
+            let res = hl.powi(2);
+            parkinson_hv += res;
+        }
+        let res =  (parkinson_hv / 4. * 10. * (2f64.ln())).sqrt();
+
+        Some(res)
+    }
+
     fn calculate_spread(&mut self) -> Spread {
-        let tv_mean = self.calculate_tv_mean().unwrap();
+        // let tv_mean = self.calculate_tv_mean().unwrap();
+        let p_v = self.calculate_p_volatility().unwrap();
         let wap = self.strategy_data.wap.back().unwrap().clone();
 
-        self.sigma = tv_mean;
+        // self.sigma = tv_mean;
+        self.sigma = p_v;
 
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
         let q_fix = self.position.position_amount / self.order_qty;
