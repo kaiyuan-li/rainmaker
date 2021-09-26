@@ -296,7 +296,9 @@ impl AvellanedaStoikov {
                     self.in_stoploss = true;
 
                     self.timer = data.transaction_time / 1e3 as u64;
-                } else if (self.unrealized_pnl > self.stopprofit) && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000)) {
+                } else if (self.unrealized_pnl > self.stopprofit)
+                    && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000))
+                {
                     warn!(
                         "unrealized_pnl: {:?}, bigger than stopprofit: {:?}",
                         self.unrealized_pnl, self.stopprofit
@@ -466,26 +468,47 @@ impl AvellanedaStoikov {
     /// https://github.com/TommasoBelluzzo/HistoricalVolatility
     fn calculate_p_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-
-        let mut parkinson_hv = 0f64;
+        let t = 11.;
+        let mut parkinson_hv = 0.;
         for chunk in wap_vec.chunks(50) {
-            let hl =  (chunk.iter().cloned().fold(0f64/0f64, f64::max) /
-                            chunk.iter().cloned().fold(0f64/0f64, f64::min)).ln();
+            let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
+                / chunk.iter().cloned().fold(0. / 0., f64::min))
+            .ln();
             let res = hl.powi(2);
             parkinson_hv += res;
         }
-        let res =  ( parkinson_hv / (4. * 10. * (2f64.ln())) ).sqrt();
+        let res = (parkinson_hv / (4. * t * (2f64.ln()))).sqrt();
+
+        Some(res)
+    }
+
+    fn calculate_gk_volatility(&mut self) -> Option<f64> {
+        let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
+        let t = 11.;
+
+        let mut garman_klass_hv = 0.;
+        for chunk in wap_vec.chunks(50) {
+            let co = (chunk.last().unwrap() / chunk.first().unwrap()).ln();
+            let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
+                / chunk.iter().cloned().fold(0. / 0., f64::min))
+            .ln();
+            let res = 0.5 * hl.powi(2) - ((2. * 2f64.ln()) - 1.) * co.powi(2);
+            garman_klass_hv += res;
+        }
+        let res = (garman_klass_hv / t).sqrt();
 
         Some(res)
     }
 
     fn calculate_spread(&mut self) -> Spread {
         // let tv_mean = self.calculate_tv_mean().unwrap();
-        let p_v = self.calculate_p_volatility().unwrap();
+        // let p_v = self.calculate_p_volatility().unwrap();
+        let gk_v = self.calculate_gk_volatility().unwrap();
         let wap = self.strategy_data.wap.back().unwrap().clone();
 
         // self.sigma = tv_mean;
-        self.sigma = p_v;
+        // self.sigma = p_v;
+        self.sigma = gk_v;
 
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
         let q_fix = self.position.position_amount / self.order_qty;
