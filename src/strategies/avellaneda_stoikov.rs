@@ -288,6 +288,8 @@ impl AvellanedaStoikov {
                         }
                     }
 
+                    self.unrealized_pnl = 0f64;
+
                     self.active_trailing_stop = false;
                 } else if self.unrealized_pnl < -self.stoploss {
                     warn!("unrealized_pnl: {:?}, small than stoploss: {:?} stoploss then sleep: {:?}ms", self.unrealized_pnl, self.stoploss, self.stoploss_sleep);
@@ -324,7 +326,7 @@ impl AvellanedaStoikov {
                     self.active_trailing_stop = false;
 
                     self.timer = data.transaction_time / 1e3 as u64;
-                } else if self.unrealized_pnl > self.trailing_stop {
+                } else if self.unrealized_pnl > self.trailing_stop + 0.0001 {
                     self.active_trailing_stop = true;
                 } else if (self.unrealized_pnl > self.stopprofit)
                     && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000))
