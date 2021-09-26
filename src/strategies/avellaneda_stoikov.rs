@@ -75,7 +75,7 @@ impl StrategyData {
         let wap = ((event.best_bid * event.best_ask_qty) + (event.best_ask * event.best_bid_qty))
             / (event.best_bid_qty + event.best_ask_qty);
         let imb = event.best_bid_qty / (event.best_bid_qty + event.best_ask_qty);
-        let spread = event.best_ask - event.best_bid;
+        let spread = (event.best_ask - event.best_bid) / wap;
 
         self.wap.push_back(wap);
         self.imb.push_back(imb);
@@ -465,6 +465,19 @@ impl AvellanedaStoikov {
         }
     }
 
+    fn calculate_spread_volatility(&mut self) -> Option<f64> {
+        let sum: f64 = self.strategy_data.spread.iter().map(|x| x.powi(2)).sum();
+        let count = self.strategy_data.spread.len();
+        let t = 11.;
+
+        let res = (sum / t).sqrt();
+
+        match count {
+            positive if positive > 0 => Some(res),
+            _ => None,
+        }
+    }
+
     /// https://github.com/TommasoBelluzzo/HistoricalVolatility
     fn calculate_p_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
@@ -503,12 +516,14 @@ impl AvellanedaStoikov {
     fn calculate_spread(&mut self) -> Spread {
         // let tv_mean = self.calculate_tv_mean().unwrap();
         // let p_v = self.calculate_p_volatility().unwrap();
-        let gk_v = self.calculate_gk_volatility().unwrap();
+        // let gk_v = self.calculate_gk_volatility().unwrap();
+        let spread_v = self.calculate_spread_volatility().unwrap();
         let wap = self.strategy_data.wap.back().unwrap().clone();
 
         // self.sigma = tv_mean;
         // self.sigma = p_v;
-        self.sigma = gk_v;
+        // self.sigma = gk_v;
+        self.sigma = spread_v;
 
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
         let q_fix = self.position.position_amount / self.order_qty;
