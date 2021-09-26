@@ -289,9 +289,7 @@ impl AvellanedaStoikov {
                     }
 
                     self.active_trailing_stop = false;
-                }
-
-                if self.unrealized_pnl < -self.stoploss {
+                } else if self.unrealized_pnl < -self.stoploss {
                     warn!("unrealized_pnl: {:?}, small than stoploss: {:?} stoploss then sleep: {:?}ms", self.unrealized_pnl, self.stoploss, self.stoploss_sleep);
 
                     match self.account_client.cancel_all_open_orders(&self.pair).await {
