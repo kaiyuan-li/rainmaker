@@ -17,5 +17,6 @@ pub struct Config {
     pub stoploss: f64,
     pub stoploss_sleep: u64,
     pub stopprofit: f64,
+    pub trailing_stop: f64,
     pub q_max: f64,
 }
