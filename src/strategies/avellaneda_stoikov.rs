@@ -500,7 +500,7 @@ impl AvellanedaStoikov {
     fn calculate_spread_volatility(&mut self) -> Option<f64> {
         let sum: f64 = self.strategy_data.spread.iter().map(|x| x.powi(2)).sum();
         let count = self.strategy_data.spread.len();
-        let t = 11.;
+        let t = 20.;
 
         let res = (sum / t).sqrt();
 
@@ -513,7 +513,7 @@ impl AvellanedaStoikov {
     /// https://github.com/TommasoBelluzzo/HistoricalVolatility
     fn calculate_p_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 11.;
+        let t = 20.;
         let mut parkinson_hv = 0.;
         for chunk in wap_vec.chunks(50) {
             let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
@@ -529,7 +529,7 @@ impl AvellanedaStoikov {
 
     fn calculate_gk_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 11.;
+        let t = 20.;
 
         let mut garman_klass_hv = 0.;
         for chunk in wap_vec.chunks(50) {
@@ -547,9 +547,9 @@ impl AvellanedaStoikov {
 
     fn calculate_spread(&mut self) -> Spread {
         // self.sigma = self.calculate_tv_mean().unwrap();
-        // self.sigma = self.calculate_p_volatility().unwrap();
+        self.sigma = self.calculate_p_volatility().unwrap();
         // self.sigma = self.calculate_gk_volatility().unwrap();
-        self.sigma = self.calculate_spread_volatility().unwrap();
+        // self.sigma = self.calculate_spread_volatility().unwrap();
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
         let q_fix = self.position.position_amount / self.order_qty;
 
