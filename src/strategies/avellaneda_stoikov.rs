@@ -546,23 +546,16 @@ impl AvellanedaStoikov {
     }
 
     fn calculate_spread(&mut self) -> Spread {
-        // let tv_mean = self.calculate_tv_mean().unwrap();
-        // let p_v = self.calculate_p_volatility().unwrap();
-        let gk_v = self.calculate_gk_volatility().unwrap();
-        // let spread_v = self.calculate_spread_volatility().unwrap();
-        let wap = self.strategy_data.wap.back().unwrap().clone();
-
-        // self.sigma = tv_mean;
-        // self.sigma = p_v;
-        self.sigma = gk_v;
-        // self.sigma = spread_v;
-
+        // self.sigma = self.calculate_tv_mean().unwrap();
+        // self.sigma = self.calculate_p_volatility().unwrap();
+        // self.sigma = self.calculate_gk_volatility().unwrap();
+        self.sigma = self.calculate_spread_volatility().unwrap();
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
         let q_fix = self.position.position_amount / self.order_qty;
 
         info!(
-            "wap: {} sigma: {}, sigma_multiplier {}, sigma_fix {}, q {}, q_fix {}",
-            wap, self.sigma, self.sigma_multiplier, sigma_fix, self.position.position_amount, q_fix,
+            "sigma: {}, sigma_multiplier {}, sigma_fix {}, q {}, q_fix {}",
+            self.sigma, self.sigma_multiplier, sigma_fix, self.position.position_amount, q_fix,
         );
         info!(
             "buy_k: {}, buy_a: {}, sell_k {}, sell_a {}",
