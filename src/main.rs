@@ -1,4 +1,3 @@
-use actix_rt::Arbiter;
 use env_logger::Builder;
 use exrs::binance_f::api::*;
 use exrs::binance_f::userstream::*;
