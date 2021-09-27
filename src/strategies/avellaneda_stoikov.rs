@@ -500,7 +500,7 @@ impl AvellanedaStoikov {
     fn calculate_classical_volatility(&mut self) -> Option<f64> {
         let t = 20.;
         let mut classical_hv = 0.;
-        for (i, x)  in self.strategy_data.wap.iter().enumerate() {
+        for i in 0..self.strategy_data.wap.iter().len() {
             let res = self.strategy_data.wap.get(i+1).unwrap() - self.strategy_data.wap.get(i).unwrap();
             classical_hv += res.powi(2)
         }
