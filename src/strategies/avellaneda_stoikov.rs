@@ -131,7 +131,7 @@ pub struct AvellanedaStoikov {
 
 impl AvellanedaStoikov {
     pub fn new(config: Config) -> Box<Self> {
-        let solver_type = SolverType::LogRegression;
+        let solver_type = SolverType::MultiCurve;
 
         let sf = AkSolverFactory::new(&solver_type);
         let ie = IntensityEstimator::new(
@@ -495,6 +495,19 @@ impl AvellanedaStoikov {
             positive if positive > 0 => Some(sum / count as f64),
             _ => None,
         }
+    }
+
+    fn calculate_classical_volatility(&mut self) -> Option<f64> {
+        let t = 20.;
+        let mut classical_hv = 0.;
+        for (i, x)  in self.strategy_data.wap.iter().enumerate() {
+            let res = self.strategy_data.wap.get(i+1).unwrap() - self.strategy_data.wap.get(i).unwrap();
+            classical_hv += res.powi(2)
+        }
+
+        let res = (classical_hv / t).sqrt();
+
+        Some(res)
     }
 
     fn calculate_spread_volatility(&mut self) -> Option<f64> {
