@@ -237,11 +237,11 @@ impl AvellanedaStoikov {
             self.calculate_intensity_info(data.best_ask, data.best_bid, data.transaction_time)
         {
             let (buy_a, buy_k, sell_a, sell_k) = intensity_info.get_ak();
-            let epsilon = 1e-7;
-            self.buy_a = buy_a + epsilon;
-            self.buy_k = buy_k + epsilon;
-            self.sell_a = sell_a + epsilon;
-            self.sell_k = sell_k + epsilon;
+
+            self.buy_a = buy_a + std::f64::EPSILON;
+            self.buy_k = buy_k + std::f64::EPSILON;
+            self.sell_a = sell_a + std::f64::EPSILON;
+            self.sell_k = sell_k + std::f64::EPSILON;
 
             let spread = self.calculate_spread();
             info!("speard: {:?}", spread);
@@ -267,7 +267,11 @@ impl AvellanedaStoikov {
                     self.stopprofit
                 );
 
-                if self.active_trailing_stop && self.unrealized_pnl < self.trailing_stop {
+                if self.unrealized_pnl > self.trailing_stop {
+                    self.active_trailing_stop = true;
+                }
+
+                if self.active_trailing_stop && (self.unrealized_pnl < self.trailing_stop) {
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
@@ -291,7 +295,9 @@ impl AvellanedaStoikov {
                     self.unrealized_pnl = 0f64;
 
                     self.active_trailing_stop = false;
-                } else if self.unrealized_pnl < -self.stoploss {
+                }
+
+                if self.unrealized_pnl < -self.stoploss {
                     warn!("unrealized_pnl: {:?}, small than stoploss: {:?} stoploss then sleep: {:?}ms", self.unrealized_pnl, self.stoploss, self.stoploss_sleep);
 
                     match self.account_client.cancel_all_open_orders(&self.pair).await {
@@ -326,11 +332,7 @@ impl AvellanedaStoikov {
                     self.active_trailing_stop = false;
 
                     self.timer = data.transaction_time / 1e3 as u64;
-                } else if self.unrealized_pnl > self.trailing_stop + 0.0001 {
-                    self.active_trailing_stop = true;
-                } else if (self.unrealized_pnl > self.stopprofit)
-                    && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000))
-                {
+                } else if (self.unrealized_pnl > self.stopprofit) && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000)) {
                     warn!(
                         "unrealized_pnl: {:?}, bigger than stopprofit: {:?}",
                         self.unrealized_pnl, self.stopprofit
@@ -347,8 +349,8 @@ impl AvellanedaStoikov {
                             .market_sell(&self.pair, self.position.position_amount)
                             .await
                         {
-                            Ok(answer) => info!("Stop loss market sell {:?}", answer),
-                            Err(err) => warn!("Stop loss market sell Error: {}", err),
+                            Ok(answer) => info!("Stop stopprofit market sell {:?}", answer),
+                            Err(err) => warn!("Stop stopprofit market sell Error: {}", err),
                         }
                     } else {
                         match self
@@ -356,8 +358,8 @@ impl AvellanedaStoikov {
                             .market_buy(&self.pair, self.position.position_amount.abs())
                             .await
                         {
-                            Ok(answer) => info!("Stop loss market buy {:?}", answer),
-                            Err(err) => warn!("Stop loss market buy Error: {}", err),
+                            Ok(answer) => info!("Stop stopprofit market buy {:?}", answer),
+                            Err(err) => warn!("Stop stopprofit market buy Error: {}", err),
                         }
                     }
 
@@ -560,8 +562,8 @@ impl AvellanedaStoikov {
 
     fn calculate_spread(&mut self) -> Spread {
         // self.sigma = self.calculate_tv_mean().unwrap();
+        // self.sigma = self.calculate_p_volatility().unwrap();
         self.sigma = self.calculate_gk_volatility().unwrap();
-        // self.sigma = self.calculate_gk_volatility().unwrap();
         // self.sigma = self.calculate_spread_volatility().unwrap();
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
         let q_fix = self.position.position_amount / self.order_qty;
