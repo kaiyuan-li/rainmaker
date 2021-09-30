@@ -131,7 +131,7 @@ pub struct AvellanedaStoikov {
 
 impl AvellanedaStoikov {
     pub fn new(config: Config) -> Box<Self> {
-        let solver_type = SolverType::MultiCurve;
+        let solver_type = SolverType::LogRegression;
 
         let sf = AkSolverFactory::new(&solver_type);
         let ie = IntensityEstimator::new(
@@ -267,7 +267,7 @@ impl AvellanedaStoikov {
                     self.stopprofit
                 );
 
-                if self.unrealized_pnl > self.trailing_stop {
+                if self.unrealized_pnl > self.trailing_stop && (self.timer <= data.transaction_time / 1e3 as u64 - (10000 / 1000)) {
                     self.active_trailing_stop = true;
                 }
 
@@ -295,6 +295,8 @@ impl AvellanedaStoikov {
                     self.unrealized_pnl = 0f64;
 
                     self.active_trailing_stop = false;
+
+                    self.timer = data.transaction_time / 1e3 as u64;
                 }
 
                 if self.unrealized_pnl < -self.stoploss {
