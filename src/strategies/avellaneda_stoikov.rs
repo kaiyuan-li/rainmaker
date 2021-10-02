@@ -549,7 +549,7 @@ impl AvellanedaStoikov {
         let t = 11.;
 
         let mut garman_klass_hv = 0.;
-        for chunk in wap_vec.chunks(50) {
+        for chunk in wap_vec.chunks(80) {
             let co = (chunk.last().unwrap() / chunk.first().unwrap()).ln();
             let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
                 / chunk.iter().cloned().fold(0. / 0., f64::min))
