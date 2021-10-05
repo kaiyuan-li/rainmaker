@@ -115,6 +115,7 @@ impl StrategyData {
 
 #[actix_rt::main]
 async fn main() {
+    println!("main started: {:?}", chrono::prelude::Local::now());
     Builder::new().parse_default_env().init();
     let (tx, mut rx): (
         mpsc::Sender<Event>,
