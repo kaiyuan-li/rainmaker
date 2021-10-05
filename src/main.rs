@@ -18,7 +18,7 @@ use strategies::avellaneda_stoikov::AvellanedaStoikov;
 
 #[actix_rt::main]
 async fn main() {
-    println!("main started");
+    println!("main started: {:?}", chrono::prelude::Local::now());
     Builder::new().parse_default_env().init();
     let args: Vec<String> = env::args().collect();
     let file = fs::File::open(&args[1]).expect("file should open read only");
