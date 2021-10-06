@@ -11,9 +11,9 @@
     "sigma_tick_period": 880,
     "gamma": 0.1,
     "sigma_multiplier": 1,
-    "stoploss": 0.0056,
+    "stoploss": 0.00618,
     "stoploss_sleep": 300000,
     "stopprofit": 0.00618,
-    "trailing_stop": 0.003,
+    "trailing_stop": 0.00382,
     "q_max": 30
 }
