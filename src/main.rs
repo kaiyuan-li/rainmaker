@@ -52,7 +52,7 @@ async fn main() {
                 actix_rt::spawn(async move {
                     loop {
                         let res = userstream.keep_alive(&listen_key).await;
-                        println!("Send keep_alive: {:?}", res);
+                        info!("Send keep_alive: {:?}", res);
                         tokio::time::sleep(tokio::time::Duration::from_secs(300)).await;
                     }
                 });
