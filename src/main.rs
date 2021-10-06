@@ -55,10 +55,13 @@ async fn main() {
                 });
 
                 account_ws.connect(&answer.listen_key).await.unwrap();
-                while let Err(e) = account_ws.event_loop(&account_keep_running).await {
-                    warn!("account_ws Error: {}, starting reconnect...", e);
 
-                    account_ws.connect(&answer.listen_key).await.unwrap();
+                while let Err(e) = account_ws.event_loop(&account_keep_running).await {
+                    warn!("account_ws event_loop Error: {}, starting reconnect...", e);
+
+                    while let Err(e) = account_ws.connect(&answer.listen_key).await {
+                        warn!("account_ws connect Error: {}, try again...", e);
+                    }
                 }
             }
             Err(_e) => panic!("Not able to start an User Stream (Check your API_KEY"),
@@ -69,12 +72,15 @@ async fn main() {
     actix_rt::spawn(async move {
         let book_tx = tx.clone();
         let mut book_ws: FuturesWebSockets<FuturesWebsocketEvent> = FuturesWebSockets::new(book_tx);
+
         book_ws.connect(&sub).await.unwrap();
 
         while let Err(e) = book_ws.event_loop(&book_keep_running).await {
-            warn!("book_ws Error: {}, starting reconnect...", e);
+            warn!("book_ws event_loop Error: {}, starting reconnect...", e);
 
-            book_ws.connect(&sub).await.unwrap();
+            while let Err(e) = book_ws.connect(&sub).await {
+                warn!("book_ws connect Error: {}, try again...", e);
+            }
         }
     });
 
