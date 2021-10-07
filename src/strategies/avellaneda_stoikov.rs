@@ -281,7 +281,7 @@ impl AvellanedaStoikov {
                             Ok(answer) => info!("Trailing stop market sell {:?}", answer),
                             Err(err) => warn!("Trailing stop market sell Error: {}", err),
                         }
-                    } else {
+                    } else if self.position.position_amount < 0f64 {
                         match self
                             .account_client
                             .market_buy(&self.pair, self.position.position_amount.abs())
@@ -290,6 +290,8 @@ impl AvellanedaStoikov {
                             Ok(answer) => info!("Trailing stop market buy {:?}", answer),
                             Err(err) => warn!("Trailing stop market buy Error: {}", err),
                         }
+                    } else {
+                        info!("Already Trailing Stoped, pass.")
                     }
 
                     self.unrealized_pnl = 0f64;
