@@ -1,20 +1,17 @@
-use super::eie::{
+use crate::strategies::eie::{
     calibration::aksolver_factory::{AkSolverFactory, SolverType},
     intensity_estimator::IntensityEstimator,
     intensity_info::IntensityInfo,
 };
-use crate::{config::Config, util};
+use crate::config::OkexConfig;
+use crate::util;
+
+use exrs::{okex_v5::{account::Account, api::Okex, rest_model::{OrderCancellation, PositionSide}, util::get_timestamp, ws_model::{AccountEvent, BalancePositionEvent, OrderEvent, PositionsEvent, TickerEvent, WebsocketEvent}}};
 
 use anyhow::Result;
-use exrs::binance_f::{
-    account::{FuturesAccount, PositionSide},
-    api::BinanceF,
-    rest_model::TimeInForce,
-    util::get_timestamp,
-    ws_model::{AccountUpdateEvent, BookTickerEvent, FuturesWebsocketEvent},
-};
 use log::{debug, info, warn};
 use std::collections::VecDeque;
+use uuid::Uuid;
 use tokio::sync::mpsc;
 
 #[derive(Debug, Copy, Clone)]
@@ -53,7 +50,9 @@ impl StrategyData {
         }
     }
 
-    pub fn push(&mut self, event: Box<BookTickerEvent>) {
+    pub fn push(&mut self, event: Box<TickerEvent>) {
+        let data = &event.data[0];
+
         if self.timestamp.len() > self.capacity - 1 {
             self.timestamp.pop_front();
             self.ask_price.pop_front();
@@ -66,7 +65,9 @@ impl StrategyData {
             self.tv.pop_front();
         }
 
-        self.timestamp.push_back(event.transaction_time);
+        let event = &event.data[0];
+
+        self.timestamp.push_back(event.timestamp);
         self.ask_price.push_back(event.best_ask);
         self.ask_qty.push_back(event.best_ask_qty);
         self.bid_price.push_back(event.best_bid);
@@ -94,11 +95,12 @@ struct Position {
 }
 
 pub struct AvellanedaStoikov {
-    config: Config,
+    config: OkexConfig,
     start_time: u64,
     timer: u64,
-    account_client: FuturesAccount,
+    account_client: Account,
     strategy_data: StrategyData,
+    opened_order_ids: Vec<Uuid>,
     base_asset: String,
     quote_asset: String,
     pair: String,
@@ -130,7 +132,7 @@ pub struct AvellanedaStoikov {
 }
 
 impl AvellanedaStoikov {
-    pub fn new(config: Config) -> Box<Self> {
+    pub fn new(config: OkexConfig) -> Box<Self> {
         let solver_type = SolverType::LogRegression;
 
         let sf = AkSolverFactory::new(&solver_type);
@@ -142,8 +144,8 @@ impl AvellanedaStoikov {
             sf,
         );
 
-        let account_client: FuturesAccount =
-            BinanceF::new(config.api_key.clone(), config.secret_key.clone());
+        let account_client: Account =
+            Okex::new(config.api_key.clone(), config.secret_key.clone(), config.passphrase.clone());
 
         let tick_round = config
             .tick_size
@@ -163,6 +165,7 @@ impl AvellanedaStoikov {
             timer: 0,
             account_client: account_client,
             strategy_data: StrategyData::with_capacity(config.sigma_tick_period),
+            opened_order_ids: Vec::new(),
             base_asset: config.base_asset,
             quote_asset: config.quote_asset,
             pair: pair.clone(),
@@ -202,23 +205,29 @@ impl AvellanedaStoikov {
         "Avellaneda_Stoikov".into()
     }
 
-    pub async fn run_forever(&mut self, mut rx: mpsc::Receiver<FuturesWebsocketEvent>) {
+    pub async fn run_forever(&mut self, mut rx: mpsc::Receiver<WebsocketEvent>) {
         loop {
             if let Some(event) = rx.recv().await {
                 match event {
-                    FuturesWebsocketEvent::BookTicker(book_event) => {
-                        // debug!("book_event: {:?}", book_event);
-                        self.on_tick(book_event).await.unwrap();
+                    WebsocketEvent::Ticker(ticker_event) => {
+                        debug!("Ticker: {:?}", ticker_event);
+                        self.on_tick(ticker_event).await.unwrap();
                     }
-                    FuturesWebsocketEvent::AccountUpdate(account_event) => {
-                        // debug!("account_event: {:?}", account_event);
+                    WebsocketEvent::Account(account_event) => {
+                        debug!("Account: {:?}", account_event);
                         self.on_account(account_event).await.unwrap();
                     }
-                    FuturesWebsocketEvent::OrderTradeUpdate(order_event) => {
-                        debug!("ORDER_TRADE_UPDATE: {:?}", order_event);
+                    WebsocketEvent::Position(position_event) => {
+                        debug!("Position: {:?}", position_event);
+                        self.on_position(position_event);
                     }
-                    FuturesWebsocketEvent::AccountConfigUpdate(config_event) => {
-                        debug!("ACCOUNT_CONFIG_UPDATE: {:?}", config_event);
+                    WebsocketEvent::BalancePosition(balance_position_event) => {
+                        debug!("BalancePosition: {:?}", balance_position_event);
+                        self.on_balance_position(balance_position_event);
+                    }
+                    WebsocketEvent::Order(order_event) => {
+                        debug!("Order: {:?}", order_event);
+                        self.on_order(order_event);
                     }
                     _ => {
                         warn!("Websockets parse error! {:?}", event);
@@ -229,12 +238,25 @@ impl AvellanedaStoikov {
         }
     }
 
-    async fn on_tick(&mut self, data: Box<BookTickerEvent>) -> Result<()> {
-        debug!("on_ticker: {:?}", data);
-        self.strategy_data.push(data.clone());
+    async fn on_position(&mut self, event: Box<PositionsEvent>) {
+
+    }
+
+    async fn on_order(&mut self, event: Box<OrderEvent>) {
+
+    }
+
+    async fn on_balance_position(&mut self, event: Box<BalancePositionEvent>) {
+
+    }
+
+    async fn on_tick(&mut self, event: Box<TickerEvent>) -> Result<()> {
+        debug!("on_ticker: {:?}", event);
+        self.strategy_data.push(event.clone());
+        let data = &event.data[0];
 
         if let Some(intensity_info) =
-            self.calculate_intensity_info(data.best_ask, data.best_bid, data.transaction_time)
+            self.calculate_intensity_info(data.best_ask, data.best_bid, data.timestamp)
         {
             let (buy_a, buy_k, sell_a, sell_k) = intensity_info.get_ak();
 
@@ -267,7 +289,7 @@ impl AvellanedaStoikov {
                     self.stopprofit
                 );
 
-                if self.unrealized_pnl > self.trailing_stop && (self.timer <= data.transaction_time / 1e3 as u64 - (10000 / 1000)) {
+                if self.unrealized_pnl > self.trailing_stop && (self.timer <= data.timestamp / 1e3 as u64 - (10000 / 1000)) {
                     self.active_trailing_stop = true;
                 }
 
@@ -298,21 +320,26 @@ impl AvellanedaStoikov {
 
                     self.active_trailing_stop = false;
 
-                    self.timer = data.transaction_time / 1e3 as u64;
+                    self.timer = data.timestamp / 1e3 as u64;
                 }
 
                 if self.unrealized_pnl < -self.stoploss {
                     warn!("unrealized_pnl: {:?}, small than stoploss: {:?} stoploss then sleep: {:?}ms", self.unrealized_pnl, self.stoploss, self.stoploss_sleep);
 
-                    match self.account_client.cancel_all_open_orders(&self.pair).await {
-                        Ok(answer) => info!("Cancel all open orders: {:?}", answer),
+                    let orders = create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+
+                    match self.account_client.cancel_all_open_orders(orders).await {
+                        Ok(answer) => { 
+                            info!("Cancel all open orders: {:?}", answer);
+                            // self.opened_order_ids = Vec::new();
+                        },
                         Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                     }
 
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
-                            .market_sell(&self.pair, self.position.position_amount)
+                            .market_sell(&self.pair, self.position.position_amount, )
                             .await
                         {
                             Ok(answer) => info!("Stop loss market sell {:?}", answer),
@@ -335,15 +362,20 @@ impl AvellanedaStoikov {
 
                     self.active_trailing_stop = false;
 
-                    self.timer = data.transaction_time / 1e3 as u64;
-                } else if (self.unrealized_pnl > self.stopprofit) && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000)) {
+                    self.timer = data.timestamp / 1e3 as u64;
+                } else if (self.unrealized_pnl > self.stopprofit) && (self.timer <= data.timestamp / 1e3 as u64 - (self.period / 1000)) {
                     warn!(
                         "unrealized_pnl: {:?}, bigger than stopprofit: {:?}",
                         self.unrealized_pnl, self.stopprofit
                     );
 
-                    match self.account_client.cancel_all_open_orders(&self.pair).await {
-                        Ok(answer) => info!("Cancel all open orders: {:?}", answer),
+                    let orders = create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+
+                    match self.account_client.cancel_all_open_orders(orders).await {
+                        Ok(answer) => { 
+                            info!("Cancel all open orders: {:?}", answer);
+                            self.opened_order_ids = Vec::new();
+                        },
                         Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                     }
 
@@ -369,13 +401,13 @@ impl AvellanedaStoikov {
 
                     self.unrealized_pnl = 0f64;
 
-                    self.timer = data.transaction_time / 1e3 as u64;
-                } else if self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000) {
+                    self.timer = data.timestamp / 1e3 as u64;
+                } else if self.timer <= data.timestamp / 1e3 as u64 - (self.period / 1000) {
                     debug!(
                         "timer: {}, now - {} = {}",
                         self.timer,
                         (self.period / 1000),
-                        data.transaction_time / 1e3 as u64 - 2
+                        data.timestamp / 1e3 as u64 - 2
                     );
 
                     let account_client = self.account_client.clone();
@@ -383,12 +415,18 @@ impl AvellanedaStoikov {
                     let pair = self.pair.clone();
                     let order_qty = self.order_qty.clone();
                     let tick_round = self.tick_round.clone();
+                    let opened_order_ids = self.opened_order_ids.clone();
 
                     actix_rt::spawn(async move {
                         debug!("on_ticker thread");
 
-                        match account_client.cancel_all_open_orders(&pair).await {
-                            Ok(answer) => info!("Cancel all open orders: {:?}", answer),
+                        let orders = create_order_cancellation(&pair, opened_order_ids).unwrap();
+
+                        match account_client.cancel_all_open_orders(orders).await {
+                            Ok(answer) => { 
+                                info!("Cancel all open orders: {:?}", answer);
+                                // self.opened_order_ids = Vec::new();
+                            },
                             Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                         }
 
@@ -401,13 +439,15 @@ impl AvellanedaStoikov {
                             last_wap, spread.ask, spread.bid, sell_price, buy_price
                         );
 
+                        let order_id = Uuid::new_v4().to_string();
+
                         match account_client
                             .limit_buy(
                                 &pair,
                                 order_qty,
                                 buy_price,
-                                PositionSide::Both,
-                                TimeInForce::GTC,
+                                PositionSide::Long,
+                                &order_id
                             )
                             .await
                         {
@@ -415,13 +455,15 @@ impl AvellanedaStoikov {
                             Err(err) => warn!("Limit buy Error: {}", err),
                         }
 
+                        let order_id = Uuid::new_v4().to_string();
+
                         match account_client
                             .limit_sell(
                                 &pair,
                                 order_qty,
                                 sell_price,
-                                PositionSide::Both,
-                                TimeInForce::GTC,
+                                PositionSide::Short,
+                                &order_id
                             )
                             .await
                         {
@@ -430,11 +472,11 @@ impl AvellanedaStoikov {
                         }
                     });
 
-                    self.timer = data.transaction_time / 1e3 as u64;
+                    self.timer = data.timestamp / 1e3 as u64;
                     debug!("new timer {}", self.timer);
                 }
             } else if self.timer
-                <= data.transaction_time / 1e3 as u64 - (self.stoploss_sleep / 1000)
+                <= data.timestamp / 1e3 as u64 - (self.stoploss_sleep / 1000)
             {
                 self.in_stoploss = false;
                 info!("stoploss sleep finished!");
@@ -447,28 +489,27 @@ impl AvellanedaStoikov {
         Ok(())
     }
 
-    async fn on_account(&mut self, data: Box<AccountUpdateEvent>) -> Result<()> {
-        info!("on_account: {:?}", data);
+    async fn on_account(&mut self, event: Box<AccountEvent>) -> Result<()> {
+        info!("on_account: {:?}", event);
+        let data = &event.data[0];
 
-        for balance in &data.account_update.balances {
-            if balance.asset.eq(&self.pair) {
-                self.cash = balance.cross_wallet_balance;
+        for detail in &data.details {
+            if detail.ccy.eq(&self.base_asset) {
+                self.cash = detail.cash_bal;
             }
         }
 
         let tmp_q = data
-            .account_update
-            .positions
+            .details
             .iter()
-            .find(|&x| x.symbol.eq(&self.pair) && x.position_side.eq("BOTH"))
-            .and_then(|x| Some(x.position_amount));
+            .find(|&x| x.ccy.eq(&self.base_asset))
+            .and_then(|x| Some(x.eq));
 
         let entry_price = data
-            .account_update
-            .positions
+            .details
             .iter()
-            .find(|&x| x.symbol.eq(&self.pair) && x.position_side.eq("BOTH"))
-            .and_then(|x| Some(x.entry_price));
+            .find(|&x| x.ccy.eq(&self.base_asset))
+            .and_then(|x| Some(x.eq_usd / x.eq));
 
         self.position.entry_price = entry_price.unwrap_or_else(|| self.position.entry_price);
         self.position.position_amount = tmp_q.unwrap_or_else(|| self.position.position_amount);
@@ -595,4 +636,19 @@ impl AvellanedaStoikov {
 
         Spread { ask: ask, bid: bid }
     }
+}
+
+fn create_order_cancellation(symbol: &str, opened_order_ids: Vec<Uuid>) -> Result<Vec<OrderCancellation>> {
+    let mut batch = Vec::new();
+    for client_order_id in opened_order_ids {
+        let oc = OrderCancellation {
+            symbol: symbol.to_string(),
+            order_id: None,
+            orig_client_order_id: Some(client_order_id.to_string()),
+        };
+
+        batch.push(oc)
+    }
+
+    Ok(batch)
 }

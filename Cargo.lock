@@ -74,9 +74,9 @@ dependencies = [
 
 [[package]]
 name = "actix-rt"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc7d7cd957c9ed92288a7c3c96af81fa5291f65247a76a34dac7b6af74e52ba0"
+checksum = "ea360596a50aa9af459850737f99293e5cb9114ae831118cb6026b3bbc7583ad"
 dependencies = [
  "actix-macros",
  "futures-core",
@@ -1159,6 +1159,7 @@ dependencies = [
  "serde_json",
  "snmalloc-rs",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -1235,9 +1236,9 @@ checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "reqwest"
-version = "0.11.4"
+version = "0.11.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "246e9f61b9bb77df069a947682be06e31ac43ea37862e244a69f177694ea6d22"
+checksum = "51c732d463dd300362ffb44b7b125f299c23d2990411a4253824630ebc7467fb"
 dependencies = [
  "base64",
  "bytes",
@@ -1479,18 +1480,18 @@ checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 
 [[package]]
 name = "snmalloc-rs"
-version = "0.2.27"
+version = "0.2.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f5a6194d59b08fc87381e7c8a04ab4ab9967282b00f409bb742e08f3514ed0b"
+checksum = "36acaace2719c972eab3ef6a6b3aee4495f0bf300f59715bb9cff6c5acf4ae20"
 dependencies = [
  "snmalloc-sys",
 ]
 
 [[package]]
 name = "snmalloc-sys"
-version = "0.2.27"
+version = "0.2.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9518813a25ab2704a6df4968f609aa6949705409b6a854dcc87018d12961cbc8"
+checksum = "35a7e6e7d5fe756bee058ddedefc7e0a9f9c8dbaa9401b48ed3c17d6578e40b5"
 dependencies = [
  "cmake",
 ]
@@ -1857,8 +1858,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "632f73e236b219150ea279196e54e610f5dbafa5d61786303d4da54f84e47fce"
 dependencies = [
  "cfg-if",
- "serde",
- "serde_json",
  "wasm-bindgen-macro",
 ]
 
