@@ -51,8 +51,6 @@ impl StrategyData {
     }
 
     pub fn push(&mut self, event: Box<TickerEvent>) {
-        let data = &event.data[0];
-
         if self.timestamp.len() > self.capacity - 1 {
             self.timestamp.pop_front();
             self.ask_price.pop_front();
@@ -297,7 +295,7 @@ impl AvellanedaStoikov {
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
-                            .market_sell(&self.pair, self.position.position_amount)
+                            .close_position(&self.pair, Some(PositionSide::Long))
                             .await
                         {
                             Ok(answer) => info!("Trailing stop market sell {:?}", answer),
@@ -306,7 +304,7 @@ impl AvellanedaStoikov {
                     } else if self.position.position_amount < 0f64 {
                         match self
                             .account_client
-                            .market_buy(&self.pair, self.position.position_amount.abs())
+                            .close_position(&self.pair, Some(PositionSide::Short))
                             .await
                         {
                             Ok(answer) => info!("Trailing stop market buy {:?}", answer),
@@ -331,7 +329,7 @@ impl AvellanedaStoikov {
                     match self.account_client.cancel_all_open_orders(orders).await {
                         Ok(answer) => { 
                             info!("Cancel all open orders: {:?}", answer);
-                            // self.opened_order_ids = Vec::new();
+                            self.opened_order_ids.clear();
                         },
                         Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                     }
@@ -339,7 +337,7 @@ impl AvellanedaStoikov {
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
-                            .market_sell(&self.pair, self.position.position_amount, )
+                            .close_position(&self.pair, Some(PositionSide::Long))
                             .await
                         {
                             Ok(answer) => info!("Stop loss market sell {:?}", answer),
@@ -348,7 +346,7 @@ impl AvellanedaStoikov {
                     } else {
                         match self
                             .account_client
-                            .market_buy(&self.pair, self.position.position_amount.abs())
+                            .close_position(&self.pair, Some(PositionSide::Short))
                             .await
                         {
                             Ok(answer) => info!("Stop loss market buy {:?}", answer),
@@ -372,9 +370,9 @@ impl AvellanedaStoikov {
                     let orders = create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
 
                     match self.account_client.cancel_all_open_orders(orders).await {
-                        Ok(answer) => { 
+                        Ok(answer) => {
                             info!("Cancel all open orders: {:?}", answer);
-                            self.opened_order_ids = Vec::new();
+                            self.opened_order_ids.clear();
                         },
                         Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                     }
@@ -382,7 +380,7 @@ impl AvellanedaStoikov {
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
-                            .market_sell(&self.pair, self.position.position_amount)
+                            .close_position(&self.pair, Some(PositionSide::Long))
                             .await
                         {
                             Ok(answer) => info!("Stop stopprofit market sell {:?}", answer),
@@ -391,7 +389,7 @@ impl AvellanedaStoikov {
                     } else {
                         match self
                             .account_client
-                            .market_buy(&self.pair, self.position.position_amount.abs())
+                            .close_position(&self.pair, Some(PositionSide::Short))
                             .await
                         {
                             Ok(answer) => info!("Stop stopprofit market buy {:?}", answer),
@@ -417,15 +415,15 @@ impl AvellanedaStoikov {
                     let tick_round = self.tick_round.clone();
                     let opened_order_ids = self.opened_order_ids.clone();
 
-                    actix_rt::spawn(async move {
-                        debug!("on_ticker thread");
+                    // actix_rt::spawn(async move {
+                    //     debug!("on_ticker thread");
 
                         let orders = create_order_cancellation(&pair, opened_order_ids).unwrap();
 
                         match account_client.cancel_all_open_orders(orders).await {
                             Ok(answer) => { 
                                 info!("Cancel all open orders: {:?}", answer);
-                                // self.opened_order_ids = Vec::new();
+                                self.opened_order_ids.clear();
                             },
                             Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                         }
@@ -439,7 +437,7 @@ impl AvellanedaStoikov {
                             last_wap, spread.ask, spread.bid, sell_price, buy_price
                         );
 
-                        let order_id = Uuid::new_v4().to_string();
+                        let order_id = Uuid::new_v4();
 
                         match account_client
                             .limit_buy(
@@ -447,15 +445,18 @@ impl AvellanedaStoikov {
                                 order_qty,
                                 buy_price,
                                 PositionSide::Long,
-                                &order_id
+                                &order_id.to_string()
                             )
                             .await
                         {
-                            Ok(answer) => info!("Limit buy {:?}", answer),
+                            Ok(answer) => {
+                                info!("Limit buy {:?}", answer);
+                                self.opened_order_ids.push(order_id);
+                            },
                             Err(err) => warn!("Limit buy Error: {}", err),
                         }
 
-                        let order_id = Uuid::new_v4().to_string();
+                        let order_id = Uuid::new_v4();
 
                         match account_client
                             .limit_sell(
@@ -463,14 +464,17 @@ impl AvellanedaStoikov {
                                 order_qty,
                                 sell_price,
                                 PositionSide::Short,
-                                &order_id
+                                &order_id.to_string()
                             )
                             .await
                         {
-                            Ok(answer) => info!("Limit sell {:?}", answer),
+                            Ok(answer) => {
+                                info!("Limit sell {:?}", answer);
+                                self.opened_order_ids.push(order_id);
+                            },
                             Err(err) => warn!("Limit sell Error: {}", err),
                         }
-                    });
+                    // });
 
                     self.timer = data.timestamp / 1e3 as u64;
                     debug!("new timer {}", self.timer);
