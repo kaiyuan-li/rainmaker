@@ -1,15 +1,11 @@
 extern crate rainmaker;
-use bytes::Bytes;
 use env_logger::Builder;
-use exrs::okex_v5::api::*;
 use exrs::okex_v5::websockets::*;
 use exrs::okex_v5::ws_model::WebsocketEvent;
 use log::{debug, info, warn};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{env, fs};
 use tokio::sync::mpsc;
-
-use awc::ws::Message;
 
 use rainmaker::strategies::avellaneda_stoikov_okex::AvellanedaStoikov;
 
