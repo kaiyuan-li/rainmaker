@@ -30,23 +30,23 @@ async fn main() {
 
     let private_keep_running = AtomicBool::new(true);
     let private_tx = tx.clone();
-    // let c = config.clone();
-    // actix_rt::spawn(async move {
-    //     let mut private_ws: WebSockets<WebsocketEvent> = WebSockets::new(private_tx);
-    //     private_ws.connect("private").await.unwrap();
-    //     private_ws.login(c.api_key.unwrap(), 
-    //                 c.secret_key.unwrap(), 
-    //                 c.passphrase.unwrap()).await.unwrap();
+    let c = config.clone();
+    actix_rt::spawn(async move {
+        let mut private_ws: WebSockets<WebsocketEvent> = WebSockets::new(private_tx);
+        private_ws.connect("private").await.unwrap();
+        private_ws.login(c.api_key.unwrap(), 
+                    c.secret_key.unwrap(), 
+                    c.passphrase.unwrap()).await.unwrap();
 
-    //     while let Err(e) = private_ws.event_loop(&private_keep_running).await {
-    //         warn!("private_ws event_loop Error: {}, starting reconnect...", e);
+        while let Err(e) = private_ws.event_loop(&private_keep_running).await {
+            warn!("private_ws event_loop Error: {}, starting reconnect...", e);
 
-    //         while let Err(e) = private_ws.connect("private").await {
-    //             warn!("private_ws connect Error: {}, try again...", e);
-    //         }
-    //     }
-    // });
-
+            while let Err(e) = private_ws.connect("private").await {
+                warn!("private_ws connect Error: {}, try again...", e);
+            }
+        }
+    });
+    
     let public_keep_running = AtomicBool::new(true);
     actix_rt::spawn(async move {
         let public_tx = tx.clone();
