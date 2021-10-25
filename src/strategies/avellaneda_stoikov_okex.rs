@@ -1,18 +1,26 @@
+use crate::config::OkexConfig;
 use crate::strategies::eie::{
     calibration::aksolver_factory::{AkSolverFactory, SolverType},
     intensity_estimator::IntensityEstimator,
     intensity_info::IntensityInfo,
 };
-use crate::config::OkexConfig;
 use crate::util;
 
-use exrs::{okex_v5::{account::Account, api::Okex, rest_model::{OrderCancellation, PositionSide}, util::get_timestamp, ws_model::{AccountEvent, BalancePositionEvent, OrderEvent, PositionsEvent, TickerEvent, WebsocketEvent}}};
+use exrs::okex_v5::{
+    account::Account,
+    api::Okex,
+    rest_model::{OrderCancellation, PositionSide},
+    util::get_timestamp,
+    ws_model::{
+        AccountEvent, BalancePositionEvent, OrderEvent, PositionsEvent, TickerEvent, WebsocketEvent,
+    },
+};
 
 use anyhow::Result;
 use log::{debug, info, warn};
 use std::collections::VecDeque;
-use uuid::Uuid;
 use tokio::sync::mpsc;
+use uuid::Uuid;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Spread {
@@ -142,8 +150,11 @@ impl AvellanedaStoikov {
             sf,
         );
 
-        let account_client: Account =
-            Okex::new(config.api_key.clone(), config.secret_key.clone(), config.passphrase.clone());
+        let account_client: Account = Okex::new(
+            config.api_key.clone(),
+            config.secret_key.clone(),
+            config.passphrase.clone(),
+        );
 
         let tick_round = config
             .tick_size
@@ -236,17 +247,11 @@ impl AvellanedaStoikov {
         }
     }
 
-    async fn on_position(&mut self, event: Box<PositionsEvent>) {
+    async fn on_position(&mut self, event: Box<PositionsEvent>) {}
 
-    }
+    async fn on_order(&mut self, event: Box<OrderEvent>) {}
 
-    async fn on_order(&mut self, event: Box<OrderEvent>) {
-
-    }
-
-    async fn on_balance_position(&mut self, event: Box<BalancePositionEvent>) {
-
-    }
+    async fn on_balance_position(&mut self, event: Box<BalancePositionEvent>) {}
 
     async fn on_tick(&mut self, event: Box<TickerEvent>) -> Result<()> {
         debug!("on_ticker: {:?}", event);
@@ -287,7 +292,9 @@ impl AvellanedaStoikov {
                     self.stopprofit
                 );
 
-                if self.unrealized_pnl > self.trailing_stop && (self.timer <= data.timestamp / 1e3 as u64 - (10000 / 1000)) {
+                if self.unrealized_pnl > self.trailing_stop
+                    && (self.timer <= data.timestamp / 1e3 as u64 - (10000 / 1000))
+                {
                     self.active_trailing_stop = true;
                 }
 
@@ -324,13 +331,14 @@ impl AvellanedaStoikov {
                 if self.unrealized_pnl < -self.stoploss {
                     warn!("unrealized_pnl: {:?}, small than stoploss: {:?} stoploss then sleep: {:?}ms", self.unrealized_pnl, self.stoploss, self.stoploss_sleep);
 
-                    let orders = create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+                    let orders =
+                        create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
 
                     match self.account_client.cancel_all_open_orders(orders).await {
-                        Ok(answer) => { 
+                        Ok(answer) => {
                             info!("Cancel all open orders: {:?}", answer);
                             self.opened_order_ids.clear();
-                        },
+                        }
                         Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                     }
 
@@ -361,19 +369,22 @@ impl AvellanedaStoikov {
                     self.active_trailing_stop = false;
 
                     self.timer = data.timestamp / 1e3 as u64;
-                } else if (self.unrealized_pnl > self.stopprofit) && (self.timer <= data.timestamp / 1e3 as u64 - (self.period / 1000)) {
+                } else if (self.unrealized_pnl > self.stopprofit)
+                    && (self.timer <= data.timestamp / 1e3 as u64 - (self.period / 1000))
+                {
                     warn!(
                         "unrealized_pnl: {:?}, bigger than stopprofit: {:?}",
                         self.unrealized_pnl, self.stopprofit
                     );
 
-                    let orders = create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+                    let orders =
+                        create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
 
                     match self.account_client.cancel_all_open_orders(orders).await {
                         Ok(answer) => {
                             info!("Cancel all open orders: {:?}", answer);
                             self.opened_order_ids.clear();
-                        },
+                        }
                         Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                     }
 
@@ -418,70 +429,68 @@ impl AvellanedaStoikov {
                     // actix_rt::spawn(async move {
                     //     debug!("on_ticker thread");
 
-                        let orders = create_order_cancellation(&pair, opened_order_ids).unwrap();
+                    let orders = create_order_cancellation(&pair, opened_order_ids).unwrap();
 
-                        match account_client.cancel_all_open_orders(orders).await {
-                            Ok(answer) => { 
-                                info!("Cancel all open orders: {:?}", answer);
-                                self.opened_order_ids.clear();
-                            },
-                            Err(err) => warn!("Cancel all open orders Error: {:?}", err),
+                    match account_client.cancel_all_open_orders(orders).await {
+                        Ok(answer) => {
+                            info!("Cancel all open orders: {:?}", answer);
+                            self.opened_order_ids.clear();
                         }
+                        Err(err) => warn!("Cancel all open orders Error: {:?}", err),
+                    }
 
-                        let sell_price = util::round_to(last_wap + spread.ask, tick_round);
+                    let sell_price = util::round_to(last_wap + spread.ask, tick_round);
 
-                        let buy_price = util::round_to(last_wap - spread.bid, tick_round);
+                    let buy_price = util::round_to(last_wap - spread.bid, tick_round);
 
-                        debug!(
-                            "wap: {}, ask_spread: {}, bid_spread: {}, sell_price {}, buy_price {}",
-                            last_wap, spread.ask, spread.bid, sell_price, buy_price
-                        );
+                    debug!(
+                        "wap: {}, ask_spread: {}, bid_spread: {}, sell_price {}, buy_price {}",
+                        last_wap, spread.ask, spread.bid, sell_price, buy_price
+                    );
 
-                        let order_id = Uuid::new_v4();
+                    let order_id = Uuid::new_v4();
 
-                        match account_client
-                            .limit_buy(
-                                &pair,
-                                order_qty,
-                                buy_price,
-                                PositionSide::Long,
-                                &order_id.to_string()
-                            )
-                            .await
-                        {
-                            Ok(answer) => {
-                                info!("Limit buy {:?}", answer);
-                                self.opened_order_ids.push(order_id);
-                            },
-                            Err(err) => warn!("Limit buy Error: {}", err),
+                    match account_client
+                        .limit_buy(
+                            &pair,
+                            order_qty,
+                            buy_price,
+                            PositionSide::Long,
+                            &order_id.to_string(),
+                        )
+                        .await
+                    {
+                        Ok(answer) => {
+                            info!("Limit buy {:?}", answer);
+                            self.opened_order_ids.push(order_id);
                         }
+                        Err(err) => warn!("Limit buy Error: {}", err),
+                    }
 
-                        let order_id = Uuid::new_v4();
+                    let order_id = Uuid::new_v4();
 
-                        match account_client
-                            .limit_sell(
-                                &pair,
-                                order_qty,
-                                sell_price,
-                                PositionSide::Short,
-                                &order_id.to_string()
-                            )
-                            .await
-                        {
-                            Ok(answer) => {
-                                info!("Limit sell {:?}", answer);
-                                self.opened_order_ids.push(order_id);
-                            },
-                            Err(err) => warn!("Limit sell Error: {}", err),
+                    match account_client
+                        .limit_sell(
+                            &pair,
+                            order_qty,
+                            sell_price,
+                            PositionSide::Short,
+                            &order_id.to_string(),
+                        )
+                        .await
+                    {
+                        Ok(answer) => {
+                            info!("Limit sell {:?}", answer);
+                            self.opened_order_ids.push(order_id);
                         }
+                        Err(err) => warn!("Limit sell Error: {}", err),
+                    }
                     // });
 
                     self.timer = data.timestamp / 1e3 as u64;
                     debug!("new timer {}", self.timer);
                 }
-            } else if self.timer
-                <= data.timestamp / 1e3 as u64 - (self.stoploss_sleep / 1000)
-            {
+            } else if self.timer <= data.timestamp / 1e3 as u64 - (self.stoploss_sleep / 1000) {
                 self.in_stoploss = false;
                 info!("stoploss sleep finished!");
             } else {
@@ -552,7 +561,8 @@ impl AvellanedaStoikov {
         let t = 11.;
         let mut classical_hv = 0.;
         for i in 0..self.strategy_data.wap.iter().len() - 1 {
-            let res = self.strategy_data.wap.get(i+1).unwrap() - self.strategy_data.wap.get(i).unwrap();
+            let res =
+                self.strategy_data.wap.get(i + 1).unwrap() - self.strategy_data.wap.get(i).unwrap();
             classical_hv += res.powi(2)
         }
 
@@ -642,7 +652,10 @@ impl AvellanedaStoikov {
     }
 }
 
-fn create_order_cancellation(symbol: &str, opened_order_ids: Vec<Uuid>) -> Result<Vec<OrderCancellation>> {
+fn create_order_cancellation(
+    symbol: &str,
+    opened_order_ids: Vec<Uuid>,
+) -> Result<Vec<OrderCancellation>> {
     let mut batch = Vec::new();
     for client_order_id in opened_order_ids {
         let oc = OrderCancellation {

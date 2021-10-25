@@ -17,7 +17,8 @@ async fn main() {
     Builder::new().parse_default_env().init();
     let args: Vec<String> = env::args().collect();
     let file = fs::File::open(&args[1]).expect("file should open read only");
-    let config: rainmaker::config::Config = serde_json::from_reader(file).expect("file shoud be proper json");
+    let config: rainmaker::config::Config =
+        serde_json::from_reader(file).expect("file shoud be proper json");
     let sub = String::from(format!(
         "{}{}{}",
         config.base_asset.clone().to_lowercase(),

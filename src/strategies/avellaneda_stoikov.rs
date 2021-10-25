@@ -267,7 +267,9 @@ impl AvellanedaStoikov {
                     self.stopprofit
                 );
 
-                if self.unrealized_pnl > self.trailing_stop && (self.timer <= data.transaction_time / 1e3 as u64 - (10000 / 1000)) {
+                if self.unrealized_pnl > self.trailing_stop
+                    && (self.timer <= data.transaction_time / 1e3 as u64 - (10000 / 1000))
+                {
                     self.active_trailing_stop = true;
                 }
 
@@ -336,7 +338,9 @@ impl AvellanedaStoikov {
                     self.active_trailing_stop = false;
 
                     self.timer = data.transaction_time / 1e3 as u64;
-                } else if (self.unrealized_pnl > self.stopprofit) && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000)) {
+                } else if (self.unrealized_pnl > self.stopprofit)
+                    && (self.timer <= data.transaction_time / 1e3 as u64 - (self.period / 1000))
+                {
                     warn!(
                         "unrealized_pnl: {:?}, bigger than stopprofit: {:?}",
                         self.unrealized_pnl, self.stopprofit
@@ -507,7 +511,8 @@ impl AvellanedaStoikov {
         let t = 11.;
         let mut classical_hv = 0.;
         for i in 0..self.strategy_data.wap.iter().len() - 1 {
-            let res = self.strategy_data.wap.get(i+1).unwrap() - self.strategy_data.wap.get(i).unwrap();
+            let res =
+                self.strategy_data.wap.get(i + 1).unwrap() - self.strategy_data.wap.get(i).unwrap();
             classical_hv += res.powi(2)
         }
 

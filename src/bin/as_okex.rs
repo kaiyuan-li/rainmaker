@@ -2,8 +2,8 @@ extern crate rainmaker;
 use bytes::Bytes;
 use env_logger::Builder;
 use exrs::okex_v5::api::*;
-use exrs::okex_v5::ws_model::WebsocketEvent;
 use exrs::okex_v5::websockets::*;
+use exrs::okex_v5::ws_model::WebsocketEvent;
 use log::{debug, info, warn};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{env, fs};
@@ -19,14 +19,13 @@ async fn main() {
     Builder::new().parse_default_env().init();
     let args: Vec<String> = env::args().collect();
     let file = fs::File::open(&args[1]).expect("file should open read only");
-    let config: rainmaker::config::OkexConfig = serde_json::from_reader(file).expect("file shoud be proper json");
+    let config: rainmaker::config::OkexConfig =
+        serde_json::from_reader(file).expect("file shoud be proper json");
     let sub = r#"{"op": "subscribe","args": [{"channel": "tickers","instId": "ETH-USDT-SWAP"}]}"#;
     println!("trading to: {:?}", sub);
 
-    let (tx, rx): (
-        mpsc::Sender<WebsocketEvent>,
-        mpsc::Receiver<WebsocketEvent>,
-    ) = mpsc::channel(1024);
+    let (tx, rx): (mpsc::Sender<WebsocketEvent>, mpsc::Receiver<WebsocketEvent>) =
+        mpsc::channel(1024);
 
     let private_keep_running = AtomicBool::new(true);
     let private_tx = tx.clone();
@@ -34,9 +33,14 @@ async fn main() {
     actix_rt::spawn(async move {
         let mut private_ws: WebSockets<WebsocketEvent> = WebSockets::new(private_tx);
         private_ws.connect("private").await.unwrap();
-        private_ws.login(c.api_key.unwrap(), 
-                    c.secret_key.unwrap(), 
-                    c.passphrase.unwrap()).await.unwrap();
+        private_ws
+            .login(
+                c.api_key.unwrap(),
+                c.secret_key.unwrap(),
+                c.passphrase.unwrap(),
+            )
+            .await
+            .unwrap();
 
         while let Err(e) = private_ws.event_loop(&private_keep_running).await {
             warn!("private_ws event_loop Error: {}, starting reconnect...", e);
@@ -46,7 +50,7 @@ async fn main() {
             }
         }
     });
-    
+
     let public_keep_running = AtomicBool::new(true);
     actix_rt::spawn(async move {
         let public_tx = tx.clone();
