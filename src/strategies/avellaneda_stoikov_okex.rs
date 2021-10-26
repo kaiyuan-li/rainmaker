@@ -75,16 +75,22 @@ impl StrategyData {
 
         let event = &event.data[0];
 
-        self.timestamp.push_back(event.timestamp);
-        self.ask_price.push_back(event.asks[0][0]);
-        self.ask_qty.push_back(event.asks[0][1]);
-        self.bid_price.push_back(event.bids[0][0]);
-        self.bid_qty.push_back(event.bids[0][1]);
+        let transaction_time = event.timestamp;
+        let best_ask = event.asks[0][0].parse().unwrap();
+        let best_ask_qty = event.asks[0][1].parse().unwrap();
+        let best_bid = event.bids[0][0].parse().unwrap();
+        let best_bid_qty = event.bids[0][1].parse().unwrap();
 
-        let wap = ((event.bids[0][0] * event.asks[0][1]) + (event.asks[0][0] * event.bids[0][1] ))
-            / (event.bids[0][1]  + event.asks[0][1]);
-        let imb = event.bids[0][1]  / (event.bids[0][1]  + event.asks[0][1]);
-        let spread = (event.asks[0][0] - event.bids[0][0]) / wap;
+        self.timestamp.push_back(transaction_time);
+        self.ask_price.push_back(best_ask);
+        self.ask_qty.push_back(best_ask_qty);
+        self.bid_price.push_back(best_bid);
+        self.bid_qty.push_back(best_bid_qty);
+
+        let wap = ((best_bid * best_ask_qty) + (best_ask * best_bid_qty))
+            / (best_bid_qty + best_ask_qty);
+        let imb = best_bid_qty / (best_bid_qty + best_ask_qty);
+        let spread = (best_ask - best_bid) / wap;
 
         self.wap.push_back(wap);
         self.imb.push_back(imb);
@@ -292,12 +298,12 @@ impl AvellanedaStoikov {
     async fn on_tick(&mut self, event: Box<TickerEvent>) {}
 
     async fn on_orderbook(&mut self, event: Box<OrderBookEvent>) -> Result<()> {
-        debug!("on_ticker: {:?}", event);
+        // debug!("on_orderbook: {:?}", event);
         self.strategy_data.push(event.clone());
         let data = &event.data[0];
 
         if let Some(intensity_info) =
-            self.calculate_intensity_info(data.asks[0][0], data.bids[0][0], data.timestamp)
+            self.calculate_intensity_info(data.asks[0][0].parse().unwrap(), data.bids[0][0].parse().unwrap(), data.timestamp)
         {
             let (buy_a, buy_k, sell_a, sell_k) = intensity_info.get_ak();
 
@@ -652,10 +658,10 @@ impl AvellanedaStoikov {
 
     fn calculate_gk_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 11.;
+        let t = 3.;
 
         let mut garman_klass_hv = 0.;
-        for chunk in wap_vec.chunks(3) {
+        for chunk in wap_vec.chunks(5) {
             let co = (chunk.last().unwrap() / chunk.first().unwrap()).ln();
             let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
                 / chunk.iter().cloned().fold(0. / 0., f64::min))
