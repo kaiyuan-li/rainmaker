@@ -17,7 +17,7 @@ async fn main() {
     let file = fs::File::open(&args[1]).expect("file should open read only");
     let config: rainmaker::config::OkexConfig =
         serde_json::from_reader(file).expect("file shoud be proper json");
-    let sub = r#"{"op": "subscribe","args": [{"channel": "tickers","instId": "SHIB-USDT-SWAP"}]}"#;
+    let sub = r#"{"op": "subscribe","args": [{"channel": "books5","instId": "SHIB-USDT-SWAP"}]}"#;
     println!("trading to: {:?}", sub);
 
     let (tx, rx): (mpsc::Sender<WebsocketEvent>, mpsc::Receiver<WebsocketEvent>) =
@@ -37,23 +37,10 @@ async fn main() {
             )
             .await
             .unwrap();
+            
+        let sub = r#"{"event": "subscribe","arg": {"channel": "positions","instType": "SWAP"}}"#;
 
-        let arg = Arg {
-            channel: "positions".to_string(),
-            inst_type: Some("SWAP".to_string()),
-            inst_id: None,
-            ccy: None,
-            uly: None,
-        };
-
-        let req = SubscriptionRequest {
-            op: "subscribe".to_string(),
-            args: vec![arg],
-        };
-
-        let req_string = serde_json::to_string(&req).unwrap();
-
-        private_ws.subscribe_request(&req_string).await.unwrap();
+        private_ws.subscribe_request(sub).await.unwrap();
 
         while let Err(e) = private_ws.event_loop(&private_keep_running).await {
             warn!("private_ws event_loop Error: {}, starting reconnect...", e);

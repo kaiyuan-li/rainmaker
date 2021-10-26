@@ -6,6 +6,7 @@ use crate::strategies::eie::{
 };
 use crate::util;
 
+use exrs::okex_v5::ws_model::OrderBookEvent;
 use exrs::okex_v5::{
     account::Account,
     api::Okex,
@@ -59,7 +60,7 @@ impl StrategyData {
         }
     }
 
-    pub fn push(&mut self, event: Box<TickerEvent>) {
+    pub fn push(&mut self, event: Box<OrderBookEvent>) {
         if self.timestamp.len() > self.capacity - 1 {
             self.timestamp.pop_front();
             self.ask_price.pop_front();
@@ -75,15 +76,15 @@ impl StrategyData {
         let event = &event.data[0];
 
         self.timestamp.push_back(event.timestamp);
-        self.ask_price.push_back(event.best_ask);
-        self.ask_qty.push_back(event.best_ask_qty);
-        self.bid_price.push_back(event.best_bid);
-        self.bid_qty.push_back(event.best_bid_qty);
+        self.ask_price.push_back(event.asks[0][0]);
+        self.ask_qty.push_back(event.asks[0][1]);
+        self.bid_price.push_back(event.bids[0][0]);
+        self.bid_qty.push_back(event.bids[0][1]);
 
-        let wap = ((event.best_bid * event.best_ask_qty) + (event.best_ask * event.best_bid_qty))
-            / (event.best_bid_qty + event.best_ask_qty);
-        let imb = event.best_bid_qty / (event.best_bid_qty + event.best_ask_qty);
-        let spread = (event.best_ask - event.best_bid) / wap;
+        let wap = ((event.bids[0][0] * event.asks[0][1]) + (event.asks[0][0] * event.bids[0][1] ))
+            / (event.bids[0][1]  + event.asks[0][1]);
+        let imb = event.bids[0][1]  / (event.bids[0][1]  + event.asks[0][1]);
+        let spread = (event.asks[0][0] - event.bids[0][0]) / wap;
 
         self.wap.push_back(wap);
         self.imb.push_back(imb);
@@ -221,10 +222,14 @@ impl AvellanedaStoikov {
         loop {
             if let Some(event) = rx.recv().await {
                 match event {
-                    WebsocketEvent::Ticker(ticker_event) => {
-                        debug!("Ticker: {:?}", ticker_event);
-                        self.on_tick(ticker_event).await.unwrap();
+                    WebsocketEvent::OrderBook(book_event) => {
+                        debug!("OrderBook: {:?}", book_event);
+                        self.on_orderbook(book_event).await.unwrap();
                     }
+                    // WebsocketEvent::Ticker(ticker_event) => {
+                    //     debug!("Ticker: {:?}", ticker_event);
+                    //     self.on_tick(ticker_event).await.unwrap();
+                    // }
                     WebsocketEvent::Account(account_event) => {
                         debug!("Account: {:?}", account_event);
                         self.on_account(account_event).await.unwrap();
@@ -284,13 +289,15 @@ impl AvellanedaStoikov {
 
     async fn on_balance_position(&mut self, event: Box<BalancePositionEvent>) {}
 
-    async fn on_tick(&mut self, event: Box<TickerEvent>) -> Result<()> {
+    async fn on_tick(&mut self, event: Box<TickerEvent>) {}
+
+    async fn on_orderbook(&mut self, event: Box<OrderBookEvent>) -> Result<()> {
         debug!("on_ticker: {:?}", event);
         self.strategy_data.push(event.clone());
         let data = &event.data[0];
 
         if let Some(intensity_info) =
-            self.calculate_intensity_info(data.best_ask, data.best_bid, data.timestamp)
+            self.calculate_intensity_info(data.asks[0][0], data.bids[0][0], data.timestamp)
         {
             let (buy_a, buy_k, sell_a, sell_k) = intensity_info.get_ak();
 
