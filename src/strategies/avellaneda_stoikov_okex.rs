@@ -18,9 +18,9 @@ use exrs::okex_v5::{
 
 use anyhow::Result;
 use log::{debug, info, warn};
-use uuid::adapter::Simple;
 use std::collections::VecDeque;
 use tokio::sync::mpsc;
+use uuid::adapter::Simple;
 use uuid::Uuid;
 
 #[derive(Debug, Copy, Clone)]
@@ -335,9 +335,8 @@ impl AvellanedaStoikov {
                     warn!("unrealized_pnl: {:?}, small than stoploss: {:?} stoploss then sleep: {:?}ms", self.unrealized_pnl, self.stoploss, self.stoploss_sleep);
 
                     if !self.opened_order_ids.is_empty() {
-
                         let orders =
-                        create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+                            create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
 
                         match self.account_client.cancel_all_open_orders(orders).await {
                             Ok(answer) => {
@@ -384,9 +383,8 @@ impl AvellanedaStoikov {
                     );
 
                     if !self.opened_order_ids.is_empty() {
-
                         let orders =
-                        create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+                            create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
 
                         match self.account_client.cancel_all_open_orders(orders).await {
                             Ok(answer) => {
@@ -396,7 +394,7 @@ impl AvellanedaStoikov {
                             Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                         }
                     }
-                    
+
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
@@ -439,9 +437,8 @@ impl AvellanedaStoikov {
                     //     debug!("on_ticker thread");
 
                     if !self.opened_order_ids.is_empty() {
-
                         let orders =
-                        create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+                            create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
 
                         match self.account_client.cancel_all_open_orders(orders).await {
                             Ok(answer) => {
@@ -451,7 +448,7 @@ impl AvellanedaStoikov {
                             Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                         }
                     }
-                    
+
                     let sell_price = util::round_to(last_wap + spread.ask, tick_round);
 
                     let buy_price = util::round_to(last_wap - spread.bid, tick_round);
@@ -468,7 +465,7 @@ impl AvellanedaStoikov {
                             &pair,
                             order_qty,
                             buy_price,
-                            PositionSide::Long,
+                            PositionSide::Net,
                             &order_id.to_string(),
                         )
                         .await
@@ -489,7 +486,7 @@ impl AvellanedaStoikov {
                             &pair,
                             order_qty,
                             sell_price,
-                            PositionSide::Short,
+                            PositionSide::Net,
                             &order_id.to_string(),
                         )
                         .await
@@ -642,7 +639,7 @@ impl AvellanedaStoikov {
         self.sigma = self.calculate_gk_volatility().unwrap();
         // self.sigma = self.calculate_spread_volatility().unwrap();
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
-        let q_fix = self.position.position_amount;  // / self.order_qty;
+        let q_fix = self.position.position_amount; // / self.order_qty;
 
         info!(
             "sigma: {}, sigma_multiplier {}, sigma_fix {}, q {}, q_fix {}",
