@@ -658,7 +658,7 @@ impl AvellanedaStoikov {
 
     fn calculate_gk_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 3.;
+        let t = 2.;
 
         let mut garman_klass_hv = 0.;
         for chunk in wap_vec.chunks(5) {
