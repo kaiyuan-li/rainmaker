@@ -231,7 +231,7 @@ impl AvellanedaStoikov {
                     }
                     WebsocketEvent::Position(position_event) => {
                         debug!("Position: {:?}", position_event);
-                        self.on_position(position_event);
+                        self.on_position(position_event).await.unwrap();
                     }
                     WebsocketEvent::BalancePosition(balance_position_event) => {
                         debug!("BalancePosition: {:?}", balance_position_event);
@@ -250,7 +250,35 @@ impl AvellanedaStoikov {
         }
     }
 
-    async fn on_position(&mut self, event: Box<PositionsEvent>) {}
+    async fn on_position(&mut self, event: Box<PositionsEvent>) -> Result<()> {
+        info!("on_position: {:?}", event);
+        let data = &event.data;
+
+        // for detail in &data.details {
+        //     if detail.ccy.eq(&self.base_asset) {
+        //         self.cash = detail.cash_bal;
+        //     }
+        // }
+
+        let tmp_q = data
+            .iter()
+            .find(|&x| x.inst_id.eq(&self.pair))
+            .and_then(|x| Some(x.pos.parse::<f64>().unwrap_or_else(|_| self.position.position_amount)));
+
+        let entry_price = data
+            .iter()
+            .find(|&x| x.inst_id.eq(&self.pair))
+            .and_then(|x| Some(x.avg_px.parse::<f64>().unwrap_or_else(|_| self.position.entry_price)));
+
+        self.position.entry_price = entry_price.unwrap_or_else(|| self.position.entry_price);
+        self.position.position_amount = tmp_q.unwrap_or_else(|| self.position.position_amount);
+
+        info!(
+            "cash {:?}, q {:?}",
+            self.cash, self.position.position_amount
+        );
+        Ok(())
+    }
 
     async fn on_order(&mut self, event: Box<OrderEvent>) {}
 
@@ -620,7 +648,7 @@ impl AvellanedaStoikov {
         let t = 11.;
 
         let mut garman_klass_hv = 0.;
-        for chunk in wap_vec.chunks(50) {
+        for chunk in wap_vec.chunks(3) {
             let co = (chunk.last().unwrap() / chunk.first().unwrap()).ln();
             let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
                 / chunk.iter().cloned().fold(0. / 0., f64::min))
