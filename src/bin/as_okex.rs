@@ -64,23 +64,23 @@ async fn main() {
         }
     });
 
-    // let public_keep_running = AtomicBool::new(true);
-    // actix_rt::spawn(async move {
-    //     let public_tx = tx.clone();
-    //     let mut public_ws: WebSockets<WebsocketEvent> = WebSockets::new(public_tx);
+    let public_keep_running = AtomicBool::new(true);
+    actix_rt::spawn(async move {
+        let public_tx = tx.clone();
+        let mut public_ws: WebSockets<WebsocketEvent> = WebSockets::new(public_tx);
 
-    //     public_ws.connect("public").await.unwrap();
-    //     public_ws.subscribe_request(&sub).await.unwrap();
+        public_ws.connect("public").await.unwrap();
+        public_ws.subscribe_request(&sub).await.unwrap();
 
-    //     while let Err(e) = public_ws.event_loop(&public_keep_running).await {
-    //         warn!("public_ws event_loop Error: {}, starting reconnect...", e);
+        while let Err(e) = public_ws.event_loop(&public_keep_running).await {
+            warn!("public_ws event_loop Error: {}, starting reconnect...", e);
 
-    //         while let Err(e) = public_ws.connect("public").await {
-    //             public_ws.subscribe_request(&sub).await.unwrap();
-    //             warn!("public_ws connect Error: {}, try again...", e);
-    //         }
-    //     }
-    // });
+            while let Err(e) = public_ws.connect("public").await {
+                public_ws.subscribe_request(&sub).await.unwrap();
+                warn!("public_ws connect Error: {}, try again...", e);
+            }
+        }
+    });
 
     let mut strategy = AvellanedaStoikov::new(config);
     strategy.run_forever(rx).await;
