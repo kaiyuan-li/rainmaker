@@ -1,7 +1,7 @@
 extern crate rainmaker;
 use env_logger::Builder;
 use exrs::okex_v5::websockets::*;
-use exrs::okex_v5::ws_model::{SubscriptionRequest, Arg, WebsocketEvent};
+use exrs::okex_v5::ws_model::{Arg, SubscriptionRequest, WebsocketEvent};
 use log::{debug, info, warn};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{env, fs};

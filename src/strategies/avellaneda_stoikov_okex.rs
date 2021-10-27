@@ -20,9 +20,9 @@ use exrs::okex_v5::{
 use anyhow::Result;
 use log::{debug, info, warn};
 use std::collections::VecDeque;
-use std::sync::{Arc};
-use tokio::sync::Mutex;
+use std::sync::Arc;
 use tokio::sync::mpsc;
+use tokio::sync::Mutex;
 use uuid::adapter::Simple;
 use uuid::Uuid;
 
@@ -89,8 +89,8 @@ impl StrategyData {
         self.bid_price.push_back(best_bid);
         self.bid_qty.push_back(best_bid_qty);
 
-        let wap = ((best_bid * best_ask_qty) + (best_ask * best_bid_qty))
-            / (best_bid_qty + best_ask_qty);
+        let wap =
+            ((best_bid * best_ask_qty) + (best_ask * best_bid_qty)) / (best_bid_qty + best_ask_qty);
         let imb = best_bid_qty / (best_bid_qty + best_ask_qty);
         let spread = (best_ask - best_bid) / wap;
 
@@ -276,12 +276,24 @@ impl AvellanedaStoikov {
         let tmp_q = data
             .iter()
             .find(|&x| x.inst_id.eq(&self.pair))
-            .and_then(|x| Some(x.pos.parse::<f64>().unwrap_or_else(|_| self.position.position_amount)));
+            .and_then(|x| {
+                Some(
+                    x.pos
+                        .parse::<f64>()
+                        .unwrap_or_else(|_| self.position.position_amount),
+                )
+            });
 
         let entry_price = data
             .iter()
             .find(|&x| x.inst_id.eq(&self.pair))
-            .and_then(|x| Some(x.avg_px.parse::<f64>().unwrap_or_else(|_| self.position.entry_price)));
+            .and_then(|x| {
+                Some(
+                    x.avg_px
+                        .parse::<f64>()
+                        .unwrap_or_else(|_| self.position.entry_price),
+                )
+            });
 
         self.position.entry_price = entry_price.unwrap_or_else(|| self.position.entry_price);
         self.position.position_amount = tmp_q.unwrap_or_else(|| self.position.position_amount);
@@ -304,9 +316,11 @@ impl AvellanedaStoikov {
         self.strategy_data.push(event.clone());
         let data = &event.data[0];
 
-        if let Some(intensity_info) =
-            self.calculate_intensity_info(data.asks[0][0].parse().unwrap(), data.bids[0][0].parse().unwrap(), data.timestamp)
-        {
+        if let Some(intensity_info) = self.calculate_intensity_info(
+            data.asks[0][0].parse().unwrap(),
+            data.bids[0][0].parse().unwrap(),
+            data.timestamp,
+        ) {
             let (buy_a, buy_k, sell_a, sell_k) = intensity_info.get_ak();
 
             self.buy_a = buy_a + std::f64::EPSILON;
@@ -379,8 +393,7 @@ impl AvellanedaStoikov {
 
                     let mut ids = self.opened_order_ids.lock().await;
                     if !ids.is_empty() {
-                        let orders =
-                            create_order_cancellation(&self.pair, ids.clone())?;
+                        let orders = create_order_cancellation(&self.pair, ids.clone())?;
 
                         match self.account_client.cancel_all_open_orders(orders).await {
                             Ok(answer) => {
@@ -428,8 +441,7 @@ impl AvellanedaStoikov {
 
                     let mut ids = self.opened_order_ids.lock().await;
                     if !ids.is_empty() {
-                        let orders =
-                            create_order_cancellation(&self.pair, ids.clone())?;
+                        let orders = create_order_cancellation(&self.pair, ids.clone())?;
 
                         match self.account_client.cancel_all_open_orders(orders).await {
                             Ok(answer) => {
@@ -482,11 +494,10 @@ impl AvellanedaStoikov {
 
                     actix_rt::spawn(async move {
                         debug!("on_ticker thread");
-                        
+
                         let mut ids = opened_order_ids.lock().await;
                         if !ids.is_empty() {
-                            let orders =
-                                create_order_cancellation(&pair, ids.clone()).unwrap();
+                            let orders = create_order_cancellation(&pair, ids.clone()).unwrap();
 
                             match &account_client.cancel_all_open_orders(orders).await {
                                 Ok(answer) => {
@@ -501,7 +512,6 @@ impl AvellanedaStoikov {
                         if spread.ask < 0. {
                             sell_price = ask_price;
                         };
-
 
                         let mut buy_price = util::round_to(last_wap - spread.bid, tick_round);
                         if spread.bid < 0. {
