@@ -490,9 +490,16 @@ impl AvellanedaStoikov {
                         }
                     }
 
-                    let sell_price = util::round_to(last_wap + spread.ask, tick_round);
+                    let mut sell_price = util::round_to(last_wap + spread.ask, tick_round);
+                    if spread.ask < 0. {
+                        sell_price = self.strategy_data.ask_price.back().unwrap().clone();
+                    };
 
-                    let buy_price = util::round_to(last_wap - spread.bid, tick_round);
+
+                    let mut buy_price = util::round_to(last_wap - spread.bid, tick_round);
+                    if spread.bid < 0. {
+                        buy_price = self.strategy_data.bid_price.back().unwrap().clone();
+                    };
 
                     debug!(
                         "wap: {}, ask_spread: {}, bid_spread: {}, sell_price {}, buy_price {}",
@@ -658,7 +665,7 @@ impl AvellanedaStoikov {
 
     fn calculate_gk_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 2.;
+        let t = 11.;
 
         let mut garman_klass_hv = 0.;
         for chunk in wap_vec.chunks(5) {
