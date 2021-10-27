@@ -20,6 +20,8 @@ use exrs::okex_v5::{
 use anyhow::Result;
 use log::{debug, info, warn};
 use std::collections::VecDeque;
+use std::sync::{Arc};
+use tokio::sync::Mutex;
 use tokio::sync::mpsc;
 use uuid::adapter::Simple;
 use uuid::Uuid;
@@ -114,7 +116,7 @@ pub struct AvellanedaStoikov {
     timer: u64,
     account_client: Account,
     strategy_data: StrategyData,
-    opened_order_ids: Vec<Simple>,
+    opened_order_ids: Arc<Mutex<Vec<Simple>>>,
     base_asset: String,
     quote_asset: String,
     pair: String,
@@ -184,7 +186,7 @@ impl AvellanedaStoikov {
             timer: 0,
             account_client: account_client,
             strategy_data: StrategyData::with_capacity(config.sigma_tick_period),
-            opened_order_ids: Vec::new(),
+            opened_order_ids: Arc::new(Mutex::new(Vec::new())),
             base_asset: config.base_asset,
             quote_asset: config.quote_asset,
             pair: pair.clone(),
@@ -375,14 +377,15 @@ impl AvellanedaStoikov {
                 if self.unrealized_pnl < -self.stoploss {
                     warn!("unrealized_pnl: {:?}, small than stoploss: {:?} stoploss then sleep: {:?}ms", self.unrealized_pnl, self.stoploss, self.stoploss_sleep);
 
-                    if !self.opened_order_ids.is_empty() {
+                    let mut ids = self.opened_order_ids.lock().await;
+                    if !ids.is_empty() {
                         let orders =
-                            create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+                            create_order_cancellation(&self.pair, ids.clone())?;
 
                         match self.account_client.cancel_all_open_orders(orders).await {
                             Ok(answer) => {
                                 info!("Cancel all open orders: {:?}", answer);
-                                self.opened_order_ids.clear();
+                                ids.clear();
                             }
                             Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                         }
@@ -423,14 +426,15 @@ impl AvellanedaStoikov {
                         self.unrealized_pnl, self.stopprofit
                     );
 
-                    if !self.opened_order_ids.is_empty() {
+                    let mut ids = self.opened_order_ids.lock().await;
+                    if !ids.is_empty() {
                         let orders =
-                            create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+                            create_order_cancellation(&self.pair, ids.clone())?;
 
                         match self.account_client.cancel_all_open_orders(orders).await {
                             Ok(answer) => {
                                 info!("Cancel all open orders: {:?}", answer);
-                                self.opened_order_ids.clear();
+                                ids.clear();
                             }
                             Err(err) => warn!("Cancel all open orders Error: {:?}", err),
                         }
@@ -469,85 +473,88 @@ impl AvellanedaStoikov {
 
                     let account_client = self.account_client.clone();
                     let last_wap = self.strategy_data.wap.back().unwrap().clone();
+                    let ask_price = self.strategy_data.ask_price.back().unwrap().clone();
+                    let bid_price = self.strategy_data.bid_price.back().unwrap().clone();
                     let pair = self.pair.clone();
                     let order_qty = self.order_qty.clone();
                     let tick_round = self.tick_round.clone();
-                    // let opened_order_ids = self.opened_order_ids.clone();
+                    let opened_order_ids = self.opened_order_ids.clone();
 
-                    // actix_rt::spawn(async move {
-                    //     debug!("on_ticker thread");
+                    actix_rt::spawn(async move {
+                        debug!("on_ticker thread");
+                        
+                        let mut ids = opened_order_ids.lock().await;
+                        if !ids.is_empty() {
+                            let orders =
+                                create_order_cancellation(&pair, ids.clone()).unwrap();
 
-                    if !self.opened_order_ids.is_empty() {
-                        let orders =
-                            create_order_cancellation(&self.pair, self.opened_order_ids.clone())?;
+                            match &account_client.cancel_all_open_orders(orders).await {
+                                Ok(answer) => {
+                                    info!("Cancel all open orders: {:?}", answer);
+                                    ids.clear();
+                                }
+                                Err(err) => warn!("Cancel all open orders Error: {:?}", err),
+                            }
+                        }
 
-                        match self.account_client.cancel_all_open_orders(orders).await {
+                        let mut sell_price = util::round_to(last_wap + spread.ask, tick_round);
+                        if spread.ask < 0. {
+                            sell_price = ask_price;
+                        };
+
+
+                        let mut buy_price = util::round_to(last_wap - spread.bid, tick_round);
+                        if spread.bid < 0. {
+                            buy_price = bid_price;
+                        };
+
+                        debug!(
+                            "wap: {}, ask_spread: {}, bid_spread: {}, sell_price {}, buy_price {}",
+                            last_wap, spread.ask, spread.bid, sell_price, buy_price
+                        );
+
+                        let order_id = Uuid::new_v4().to_simple();
+
+                        match account_client
+                            .limit_buy(
+                                &pair,
+                                order_qty,
+                                buy_price,
+                                PositionSide::Net,
+                                &order_id.to_string(),
+                            )
+                            .await
+                        {
                             Ok(answer) => {
-                                info!("Cancel all open orders: {:?}", answer);
-                                self.opened_order_ids.clear();
+                                info!("Limit buy {:?}", answer);
+                                if answer.code == 0 {
+                                    ids.push(order_id);
+                                }
                             }
-                            Err(err) => warn!("Cancel all open orders Error: {:?}", err),
+                            Err(err) => warn!("Limit buy Error: {}", err),
                         }
-                    }
 
-                    let mut sell_price = util::round_to(last_wap + spread.ask, tick_round);
-                    if spread.ask < 0. {
-                        sell_price = self.strategy_data.ask_price.back().unwrap().clone();
-                    };
+                        let order_id = Uuid::new_v4().to_simple();
 
-
-                    let mut buy_price = util::round_to(last_wap - spread.bid, tick_round);
-                    if spread.bid < 0. {
-                        buy_price = self.strategy_data.bid_price.back().unwrap().clone();
-                    };
-
-                    debug!(
-                        "wap: {}, ask_spread: {}, bid_spread: {}, sell_price {}, buy_price {}",
-                        last_wap, spread.ask, spread.bid, sell_price, buy_price
-                    );
-
-                    let order_id = Uuid::new_v4().to_simple();
-
-                    match account_client
-                        .limit_buy(
-                            &pair,
-                            order_qty,
-                            buy_price,
-                            PositionSide::Net,
-                            &order_id.to_string(),
-                        )
-                        .await
-                    {
-                        Ok(answer) => {
-                            info!("Limit buy {:?}", answer);
-                            if answer.code == 0 {
-                                self.opened_order_ids.push(order_id);
+                        match account_client
+                            .limit_sell(
+                                &pair,
+                                order_qty,
+                                sell_price,
+                                PositionSide::Net,
+                                &order_id.to_string(),
+                            )
+                            .await
+                        {
+                            Ok(answer) => {
+                                info!("Limit sell {:?}", answer);
+                                if answer.code == 0 {
+                                    ids.push(order_id);
+                                }
                             }
+                            Err(err) => warn!("Limit sell Error: {}", err),
                         }
-                        Err(err) => warn!("Limit buy Error: {}", err),
-                    }
-
-                    let order_id = Uuid::new_v4().to_simple();
-
-                    match account_client
-                        .limit_sell(
-                            &pair,
-                            order_qty,
-                            sell_price,
-                            PositionSide::Net,
-                            &order_id.to_string(),
-                        )
-                        .await
-                    {
-                        Ok(answer) => {
-                            info!("Limit sell {:?}", answer);
-                            if answer.code == 0 {
-                                self.opened_order_ids.push(order_id);
-                            }
-                        }
-                        Err(err) => warn!("Limit sell Error: {}", err),
-                    }
-                    // });
+                    });
 
                     self.timer = data.timestamp / 1e3 as u64;
                     debug!("new timer {}", self.timer);
