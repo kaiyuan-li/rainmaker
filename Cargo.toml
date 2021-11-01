@@ -30,7 +30,7 @@ serde = "1.0.130"
 serde_derive = "1.0.130"
 serde_json = "1.0.68"
 snmalloc-rs = { version = "0.2.28", features = ["1mib", "native-cpu"] }
-tokio = "1.12.0"
+tokio = "1.13.0"
 uuid = { version = "0.8.2", features = ["v4"] }
 
 [profile.release]

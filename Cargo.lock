@@ -491,6 +491,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cache-padded"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "631ae5198c9be5e753e5cc215e1bd73c2b466a3565173db433f52bb9d3e66dba"
+
+[[package]]
 name = "cc"
 version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -726,6 +732,7 @@ dependencies = [
  "log",
  "reqwest",
  "ring",
+ "rtrb",
  "serde",
  "serde_json",
  "serde_qs",
@@ -1780,6 +1787,15 @@ dependencies = [
  "untrusted",
  "web-sys",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "rtrb"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d911d82e9745a598dd118e6bda2165531e316cf8eae65240776637ae8168458"
+dependencies = [
+ "cache-padded",
 ]
 
 [[package]]
