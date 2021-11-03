@@ -16,12 +16,17 @@ path = "src/bin/as_okex.rs"
 name = "arb"
 path = "src/bin/arb.rs"
 
+[[bin]]
+name = "backtest"
+path = "src/bin/backtest.rs"
+
 [dependencies]
 actix-rt = "2.3.0"
 anyhow = "1.0.44"
 awc = "2.0.3"
 bytes = "1.1.0"
 chrono = "0.4.19"
+csv = "1.1.6"
 env_logger = "0.9.0"
 exrs = { path = "../exrs" }
 linreg = "0.2.0"

@@ -312,17 +312,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
-name = "async-recursion"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7d78656ba01f1b93024b7c3a0467f1608e4be67d725749fdcd7d2c7678fd7a2"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -596,16 +585,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cron"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "628a3464535cee4e75af89e8c293bab926deaddfa166553b75029066c846be3f"
-dependencies = [
- "chrono",
- "nom",
-]
-
-[[package]]
 name = "crypto-mac"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -722,7 +701,6 @@ version = "0.1.0"
 dependencies = [
  "actix-codec 0.4.0",
  "actix-rt 2.3.0",
- "async-recursion",
  "awc 3.0.0-beta.9",
  "base64",
  "bytes 1.1.0",
@@ -748,7 +726,6 @@ dependencies = [
  "sha2",
  "thiserror",
  "tokio 1.13.0",
- "tokio-cron-scheduler",
  "url",
  "uuid",
 ]
@@ -1409,15 +1386,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nom"
-version = "4.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c349f68f25f596b9f44cf0e7c69752a5c633b0550c3ff849518bfba0233774a"
-dependencies = [
- "memchr",
-]
-
-[[package]]
 name = "ntapi"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1622,6 +1590,7 @@ dependencies = [
  "awc 2.0.3",
  "bytes 1.1.0",
  "chrono",
+ "csv",
  "env_logger",
  "exrs",
  "linreg",
@@ -2304,18 +2273,6 @@ dependencies = [
  "signal-hook-registry",
  "tokio-macros",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "tokio-cron-scheduler"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b2c664a1a2c807bb7753c535341089c05b6a5421b7c1956e0226862c069f0b2"
-dependencies = [
- "chrono",
- "cron",
- "tokio 1.13.0",
- "uuid",
 ]
 
 [[package]]
