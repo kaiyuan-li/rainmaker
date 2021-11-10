@@ -16,10 +16,6 @@ path = "src/bin/as_okex.rs"
 name = "arb"
 path = "src/bin/arb.rs"
 
-[[bin]]
-name = "backtest"
-path = "src/bin/backtest.rs"
-
 [dependencies]
 actix-rt = "2.4.0"
 anyhow = "1.0.45"
