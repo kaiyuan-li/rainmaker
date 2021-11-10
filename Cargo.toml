@@ -21,8 +21,8 @@ name = "backtest"
 path = "src/bin/backtest.rs"
 
 [dependencies]
-actix-rt = "2.3.0"
-anyhow = "1.0.44"
+actix-rt = "2.4.0"
+anyhow = "1.0.45"
 awc = "2.0.3"
 bytes = "1.1.0"
 chrono = "0.4.19"
