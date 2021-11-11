@@ -17,7 +17,13 @@ async fn main() {
     let file = fs::File::open(&args[1]).expect("file should open read only");
     let config: rainmaker::config::OkexConfig =
         serde_json::from_reader(file).expect("file shoud be proper json");
-    let sub = r#"{"op": "subscribe","args": [{"channel": "books5","instId": "SHIB-USDT-SWAP"}]}"#;
+    let pair = format!(
+        "{}-{}",
+        config.base_asset.clone(),
+        config.quote_asset.clone()
+    );
+    
+    let sub = format!("{{\"op\": \"subscribe\",\"args\": [{{\"channel\": \"books5\",\"instId\": \"{}\"}}]}}", pair);
     println!("trading to: {:?}", sub);
 
     let (tx, rx): (mpsc::Sender<WebsocketEvent>, mpsc::Receiver<WebsocketEvent>) =
