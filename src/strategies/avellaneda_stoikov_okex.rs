@@ -362,7 +362,7 @@ impl AvellanedaStoikov {
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
-                            .close_position(&self.pair, Some(PositionSide::Long))
+                            .close_position(&self.pair, Some(PositionSide::Net))
                             .await
                         {
                             Ok(answer) => info!("Trailing stop market sell {:?}", answer),
@@ -371,7 +371,7 @@ impl AvellanedaStoikov {
                     } else if self.position.position_amount < 0f64 {
                         match self
                             .account_client
-                            .close_position(&self.pair, Some(PositionSide::Short))
+                            .close_position(&self.pair, Some(PositionSide::Net))
                             .await
                         {
                             Ok(answer) => info!("Trailing stop market buy {:?}", answer),
@@ -407,7 +407,7 @@ impl AvellanedaStoikov {
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
-                            .close_position(&self.pair, Some(PositionSide::Long))
+                            .close_position(&self.pair, Some(PositionSide::Net))
                             .await
                         {
                             Ok(answer) => info!("Stop loss market sell {:?}", answer),
@@ -416,7 +416,7 @@ impl AvellanedaStoikov {
                     } else {
                         match self
                             .account_client
-                            .close_position(&self.pair, Some(PositionSide::Short))
+                            .close_position(&self.pair, Some(PositionSide::Net))
                             .await
                         {
                             Ok(answer) => info!("Stop loss market buy {:?}", answer),
@@ -455,7 +455,7 @@ impl AvellanedaStoikov {
                     if self.position.position_amount > 0f64 {
                         match self
                             .account_client
-                            .close_position(&self.pair, Some(PositionSide::Long))
+                            .close_position(&self.pair, Some(PositionSide::Net))
                             .await
                         {
                             Ok(answer) => info!("Stop stopprofit market sell {:?}", answer),
@@ -464,7 +464,7 @@ impl AvellanedaStoikov {
                     } else {
                         match self
                             .account_client
-                            .close_position(&self.pair, Some(PositionSide::Short))
+                            .close_position(&self.pair, Some(PositionSide::Net))
                             .await
                         {
                             Ok(answer) => info!("Stop stopprofit market buy {:?}", answer),
