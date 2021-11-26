@@ -17,8 +17,8 @@ name = "arb"
 path = "src/bin/arb.rs"
 
 [dependencies]
-actix-rt = "2.4.0"
-anyhow = "1.0.45"
+actix-rt = "2.5.0"
+anyhow = "1.0.48"
 awc = "2.0.3"
 bytes = "1.1.0"
 chrono = "0.4.19"
@@ -29,9 +29,9 @@ linreg = "0.2.0"
 log = "0.4.14"
 serde = "1.0.130"
 serde_derive = "1.0.130"
-serde_json = "1.0.68"
-snmalloc-rs = { version = "0.2.28", features = ["1mib", "native-cpu"] }
-tokio = "1.13.0"
+serde_json = "1.0.72"
+snmalloc-rs = { version = "0.2.28", features = ["1mib"] }
+tokio = "1.14.0"
 uuid = { version = "0.8.2", features = ["v4"] }
 
 [profile.release]

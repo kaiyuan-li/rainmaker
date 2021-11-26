@@ -203,6 +203,31 @@ impl AvellanedaStoikov {
     }
 
     pub async fn run_forever(&mut self, mut rx: mpsc::Receiver<FuturesWebsocketEvent>) {
+
+        let account_balance = self.account_client.account_balance().await.unwrap();
+
+        info!("account_balance: {:?}", account_balance);
+
+        let pair = "DOGEUSDT";
+
+        let positions = self.account_client.position_information(pair).await.unwrap();
+
+        info!("position_information: {:?}", positions);
+
+        // let qty = positions
+        //     .iter()
+        //     .find(|&x| x.symbol.eq(pair) && x.position_side.eq("BOTH"))
+        //     .and_then(|x| Some(x.position_amount)).unwrap();
+
+        // match self
+        //     .account_client
+        //     .market_sell(pair, 1000.)
+        //     .await
+        // {
+        //     Ok(answer) => info!("market sell {:?}", answer),
+        //     Err(err) => warn!("market sell Error: {}", err),
+        // }
+
         loop {
             if let Some(event) = rx.recv().await {
                 match event {
@@ -455,7 +480,7 @@ impl AvellanedaStoikov {
         info!("on_account: {:?}", data);
 
         for balance in &data.account_update.balances {
-            if balance.asset.eq(&self.pair) {
+            if balance.asset.eq(&self.quote_asset) {
                 self.cash = balance.cross_wallet_balance;
             }
         }
@@ -508,7 +533,7 @@ impl AvellanedaStoikov {
     }
 
     fn calculate_classical_volatility(&mut self) -> Option<f64> {
-        let t = 11.;
+        let t = 10.;
         let mut classical_hv = 0.;
         for i in 0..self.strategy_data.wap.iter().len() - 1 {
             let res =
@@ -524,7 +549,7 @@ impl AvellanedaStoikov {
     fn calculate_spread_volatility(&mut self) -> Option<f64> {
         let sum: f64 = self.strategy_data.spread.iter().map(|x| x.powi(2)).sum();
         let count = self.strategy_data.spread.len();
-        let t = 11.;
+        let t = 10.;
 
         let res = (sum / t).sqrt();
 
@@ -537,9 +562,9 @@ impl AvellanedaStoikov {
     /// https://github.com/TommasoBelluzzo/HistoricalVolatility
     fn calculate_p_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 11.;
+        let t = 10.;
         let mut parkinson_hv = 0.;
-        for chunk in wap_vec.chunks(50) {
+        for chunk in wap_vec.chunks(30) {
             let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
                 / chunk.iter().cloned().fold(0. / 0., f64::min))
             .ln();
@@ -553,10 +578,10 @@ impl AvellanedaStoikov {
 
     fn calculate_gk_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 11.;
+        let t = 10.;
 
         let mut garman_klass_hv = 0.;
-        for chunk in wap_vec.chunks(50) {
+        for chunk in wap_vec.chunks(30) {
             let co = (chunk.last().unwrap() / chunk.first().unwrap()).ln();
             let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
                 / chunk.iter().cloned().fold(0. / 0., f64::min))

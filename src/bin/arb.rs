@@ -63,6 +63,10 @@ impl StrategyData {
             self.ba_ask_price.pop_front();
             self.ba_bid_price.pop_front();
             self.ba_mid_price.pop_front();
+            self.hb_bid_div_ba_ask.pop_front();
+            self.hb_bid_div_ba_ask_ma.pop_front();
+            self.hb_ask_div_ba_bid.pop_front();
+            self.hb_ask_div_ba_bid_ma.pop_front();
         }
 
         match event {
@@ -142,30 +146,30 @@ async fn main() {
 
     let hb_tx = tx.clone();
     let keep_running = AtomicBool::new(true);
-    let bbo_req = r#"{"sub": "market.dydxusdt.bbo","id": "id1"}"#;
+    let bbo_req = r#"{"sub": "market.btcusdt.bbo","id": "id1"}"#;
     let mut hb_web_socket: HuobiWebSockets<Event> = HuobiWebSockets::new(hb_tx);
     actix_rt::spawn(async move {
         hb_web_socket.connect("ws").await.unwrap();
         hb_web_socket.subscribe_request(bbo_req).await.unwrap();
         if let Err(e) = hb_web_socket.event_loop(&keep_running).await {
-            println!("Error: {}", e);
+            println!("hb Error: {}", e);
         }
     });
 
     let ba_tx = tx.clone();
     let keep_running = AtomicBool::new(true);
-    let book_ticker: String = "dydxusdt@bookTicker".to_string();
+    let book_ticker: String = "btcusdt@bookTicker".to_string();
     let mut ba_web_socket: BinanceWebSockets<Event> = BinanceWebSockets::new(ba_tx);
     actix_rt::spawn(async move {
         ba_web_socket.connect(&book_ticker).await.unwrap(); // check error
         if let Err(e) = ba_web_socket.event_loop(&keep_running).await {
-            println!("Error: {}", e);
+            println!("ba Error: {}", e);
         }
     });
 
     let mut strategy_data = StrategyData::with_capacity(100 * 60 * 60);
     // 手续费 万3 方便触发
-    let fee = 0.0003;
+    let fee = 0.0001;
     let mut buy_on_ask = 0.;
     let mut sell_on_bid = 0.;
     let mut close_on_bid = 0.;
@@ -181,7 +185,7 @@ async fn main() {
         if strategy_data.hb_ask_price.len() > 200 {
             // println!("hb_bid_div_ba_ask {:?}, hb_bid_div_ba_ask_ma {:?}, fee: {:?}", *strategy_data.hb_bid_div_ba_ask.back().unwrap(), strategy_data.hb_bid_div_ba_ask_ma.back().unwrap(), ((fee*4.) * 2.));
             if *strategy_data.hb_bid_div_ba_ask.back().unwrap()
-                > (strategy_data.hb_bid_div_ba_ask_ma.back().unwrap() + ((fee * 4.) * 4.))
+                > (strategy_data.hb_bid_div_ba_ask_ma.back().unwrap() + ((fee * 4.) * 2.))
             {
                 buy_on_ask = *strategy_data.ba_ask_price.back().unwrap();
                 sell_on_bid = *strategy_data.hb_bid_price.back().unwrap();
@@ -189,7 +193,7 @@ async fn main() {
                     "hb_bid_div_ba_ask {:?}, hb_bid_div_ba_ask_ma {:?}, fee: {:?}",
                     *strategy_data.hb_bid_div_ba_ask.back().unwrap(),
                     strategy_data.hb_bid_div_ba_ask_ma.back().unwrap(),
-                    ((fee * 4.) * 4.)
+                    ((fee * 4.) * 2.)
                 );
                 println!("卖 hb_bid: {:?}, 买 ba_ask: {:?}", sell_on_bid, buy_on_ask);
             }
