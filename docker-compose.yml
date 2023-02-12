@@ -1,0 +1,8 @@
+version: "3.8"
+services:
+  rainmaker:
+    image: "rust:1.67-alpine"
+    volumes:
+      - .:/rainmaker
+    environment:
+      - USER=lky

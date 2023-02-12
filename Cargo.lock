@@ -718,7 +718,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs",
- "snmalloc-rs",
+ "snmalloc-rs 0.2.28",
  "thiserror",
  "tokio 1.14.0",
  "url",
@@ -1578,7 +1578,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "snmalloc-rs",
+ "snmalloc-rs 0.3.3",
  "tokio 1.14.0",
  "uuid",
 ]
@@ -1986,7 +1986,16 @@ version = "0.2.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36acaace2719c972eab3ef6a6b3aee4495f0bf300f59715bb9cff6c5acf4ae20"
 dependencies = [
- "snmalloc-sys",
+ "snmalloc-sys 0.2.28",
+]
+
+[[package]]
+name = "snmalloc-rs"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90bbab242a22c735dcd4c1441fffbe7004ea91f7d8fe7902cf283d72405ef978"
+dependencies = [
+ "snmalloc-sys 0.3.3",
 ]
 
 [[package]]
@@ -1994,6 +2003,15 @@ name = "snmalloc-sys"
 version = "0.2.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35a7e6e7d5fe756bee058ddedefc7e0a9f9c8dbaa9401b48ed3c17d6578e40b5"
+dependencies = [
+ "cmake",
+]
+
+[[package]]
+name = "snmalloc-sys"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80756c9f5dacaa9ff49afddb77ea18e80013228128ced3c2162f13306a225dd7"
 dependencies = [
  "cmake",
 ]

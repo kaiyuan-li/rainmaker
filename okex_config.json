@@ -4,7 +4,7 @@
     "passphrase": "V+P_58aaVfZe#3p",
     "base_asset": "SHIB",
     "quote_asset": "USDT-SWAP",
-    "order_qty": 1,
+    "order_qty": 1000,
     "tick_size": 0.00000001,
     "n_spreads": 10,
     "estimate_window": 360000,
