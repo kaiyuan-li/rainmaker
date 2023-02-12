@@ -5,8 +5,7 @@ WORKDIR /rainmaker
 # 2. Copy the files in your machine to the Docker image
 COPY ./ ./
 
-# Dependencies to run cargo build
-RUN apk add g++ make cmake
-
 # Build your program for release
-RUN cargo build --release
+RUN cargo build
+
+CMD cargo run --bin as_okex okex_config.json

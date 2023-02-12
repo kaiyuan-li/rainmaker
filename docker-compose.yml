@@ -1,8 +1,8 @@
 version: "3.8"
 services:
   rainmaker:
-    image: "rust:1.67-alpine"
-    volumes:
-      - .:/rainmaker
+    image: rainmaker_okx
+    build:
+      dockerfile: Dockerfile
     environment:
       - USER=lky
