@@ -22,8 +22,11 @@ async fn main() {
         config.base_asset.clone(),
         config.quote_asset.clone()
     );
-    
-    let sub = format!("{{\"op\": \"subscribe\",\"args\": [{{\"channel\": \"books5\",\"instId\": \"{}\"}}]}}", pair);
+
+    let sub = format!(
+        "{{\"op\": \"subscribe\",\"args\": [{{\"channel\": \"books5\",\"instId\": \"{}\"}}]}}",
+        pair
+    );
     println!("trading to: {:?}", sub);
 
     let (tx, rx): (mpsc::Sender<WebsocketEvent>, mpsc::Receiver<WebsocketEvent>) =

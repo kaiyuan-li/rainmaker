@@ -11,6 +11,7 @@ FROM debian:bullseye-slim AS trader
 COPY --from=chef /rainmaker/target/release/as_okex /usr/local/bin
 
 ## Docker build command 
-# docker build -t rainmaker_okx:waterdrop .
+# docker build -t rainmaker_okx:testnet .
 ## Docker run using an external json config
-# docker run -v /home/zhu/proj/rainmaker:/app/data -it rainmaker_okx:waterdrop /usr/local/bin/as_okex /app/data/okex_config.json
+# docker run -v /home/zhu/proj/rainmaker:/app/data -it rainmaker_okx:testnet /usr/local/bin/as_okex /app/data/okex_config.json
+

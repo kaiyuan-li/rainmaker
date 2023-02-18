@@ -12,7 +12,7 @@ pub trait Okex: Sized {
         secret_key: Option<String>,
         passphrase: Option<String>,
     ) -> Self {
-        Self::new_with_config(api_key, secret_key, passphrase, &Config::default())
+        Self::new_with_config(api_key, secret_key, passphrase, &Config::testnet())
     }
 
     /// Create a binance API using environment variables for credentials

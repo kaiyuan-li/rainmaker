@@ -201,6 +201,53 @@ pub struct OrderCancellation {
 //     pub s_msg: String,
 // }
 
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CandleRequest {
+    #[serde(rename = "instId")]
+    pub symbol: String,
+    pub bar: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub after: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub before: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u16>,
+}
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Candle {
+    #[serde(with = "string_or_u64")]
+    ts: u64,
+    o: Decimal,
+    h: Decimal,
+    l: Decimal,
+    c: Decimal,
+    vol: String,
+    vol_ccy: Decimal,
+    vol_ccy_quote: Decimal,
+    #[serde(with = "string_or_u16")]
+    confirm: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CandleResponse {
+    #[serde(with = "string_or_u16")]
+    pub code: u16,
+    pub msg: String,
+    pub data: Vec<Candle>,
+}
+
+// impl Candles {
+//     fn new() -> Candles {
+//         Candles
+//     }
+// }
+
 pub(crate) mod string_or_float {
     use std::fmt;
 
