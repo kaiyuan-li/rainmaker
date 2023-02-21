@@ -41,4 +41,5 @@ pub struct OkexConfig {
     pub stopprofit: f64,
     pub trailing_stop: f64,
     pub q_max: f64,
+    pub is_testnet: bool,
 }

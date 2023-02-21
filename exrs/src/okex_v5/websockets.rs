@@ -33,8 +33,11 @@ impl<WE: serde::de::DeserializeOwned + std::fmt::Debug> WebSockets<WE> {
     /// New websocket holder with default configuration
     /// # Examples
     /// see examples/binance_WebSockets.rs
-    pub fn new(sender: mpsc::Sender<WE>) -> WebSockets<WE> {
-        Self::new_with_options(sender, Config::testnet())
+    pub fn new(sender: mpsc::Sender<WE>, is_testnet: bool) -> WebSockets<WE> {
+        match is_testnet {
+            true => Self::new_with_options(sender, Config::testnet()),
+            false => Self::new_with_options(sender, Config::default()),
+        }
     }
 
     /// New websocket holder with provided configuration
@@ -47,7 +50,6 @@ impl<WE: serde::de::DeserializeOwned + std::fmt::Debug> WebSockets<WE> {
             conf,
         }
     }
-
     /// Connect to a websocket endpoint
     pub async fn connect(&mut self, endpoint: &str) -> Result<()> {
         let wss = match endpoint {

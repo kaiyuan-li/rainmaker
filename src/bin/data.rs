@@ -3,6 +3,7 @@ use std::fs;
 use chrono::NaiveDateTime;
 
 use exrs::okex_v5::api::*;
+use exrs::okex_v5::config::*;
 use exrs::okex_v5::market::*;
 
 #[actix_rt::main]
@@ -12,10 +13,12 @@ async fn main() {
     let file = fs::File::open(&args[1]).expect("Error in opening config file");
     let config: rainmaker::config::OkexConfig =
         serde_json::from_reader(file).expect("Expect a proper json file");
+    let api_config = Config::new(config.is_testnet);
     let market_client: Market = Okex::new(
         config.api_key.clone(),
         config.secret_key.clone(),
         config.passphrase.clone(),
+        &api_config
     );
     let symbol = String::from("BTC-USDT");
     let start_time = NaiveDateTime::parse_from_str("2023-01-01 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap();

@@ -31,9 +31,9 @@ impl SpreadIntensityCurve {
         let aksolver = solver_factory.get_solver(&spread_specification);
 
         SpreadIntensityCurve {
-            intensity_estimators: intensity_estimators,
-            intensity_estimates: intensity_estimates,
-            aksolver: aksolver,
+            intensity_estimators,
+            intensity_estimates,
+            aksolver,
         }
     }
 

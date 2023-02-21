@@ -13,6 +13,13 @@ impl Config {
     /// use binance::config::Config;
     /// let config = Config::default();
     /// ```
+    pub fn new(is_testnet: bool) -> Config {
+        match is_testnet {
+            true => Config::testnet(),
+            false => Config::default()
+        }
+    }
+
     pub fn default() -> Config {
         Config {
             rest_api_endpoint: "https://www.okex.com".into(),

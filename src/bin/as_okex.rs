@@ -1,5 +1,6 @@
 extern crate rainmaker;
 use env_logger::Builder;
+use exrs::okex_v5::config::*;
 use exrs::okex_v5::websockets::*;
 use exrs::okex_v5::ws_model::{Arg, SubscriptionRequest, WebsocketEvent};
 use log::{debug, info, warn};
@@ -35,8 +36,10 @@ async fn main() {
     let private_keep_running = AtomicBool::new(true);
     let private_tx = tx.clone();
     let c = config.clone();
+    let is_testnet = config.is_testnet;
+
     actix_rt::spawn(async move {
-        let mut private_ws: WebSockets<WebsocketEvent> = WebSockets::new(private_tx);
+        let mut private_ws: WebSockets<WebsocketEvent> = WebSockets::new(private_tx, is_testnet);
         private_ws.connect("private").await.unwrap();
         private_ws
             .login(
@@ -76,7 +79,7 @@ async fn main() {
     let public_keep_running = AtomicBool::new(true);
     actix_rt::spawn(async move {
         let public_tx = tx.clone();
-        let mut public_ws: WebSockets<WebsocketEvent> = WebSockets::new(public_tx);
+        let mut public_ws: WebSockets<WebsocketEvent> = WebSockets::new(public_tx, is_testnet);
 
         public_ws.connect("public").await.unwrap();
         public_ws.subscribe_request(&sub).await.unwrap();
