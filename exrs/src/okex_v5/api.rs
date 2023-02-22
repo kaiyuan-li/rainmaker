@@ -47,6 +47,7 @@ impl Okex for General {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
@@ -65,6 +66,7 @@ impl Okex for Account {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
@@ -83,6 +85,7 @@ impl Okex for Market {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
@@ -101,6 +104,7 @@ impl Okex for UserStream {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
@@ -119,6 +123,7 @@ impl Okex for Margin {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }

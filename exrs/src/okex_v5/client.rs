@@ -22,6 +22,7 @@ pub struct Client {
     passphrase: String,
     inner: reqwest::Client,
     host: String,
+    is_testnet: bool,
 }
 
 impl Client {
@@ -33,6 +34,7 @@ impl Client {
         secret_key: Option<String>,
         passphrase: Option<String>,
         host: String,
+        is_testnet: bool,
     ) -> Self {
         let builder: reqwest::ClientBuilder = reqwest::ClientBuilder::new();
         let builder = builder.timeout(Duration::from_secs(2));
@@ -42,6 +44,7 @@ impl Client {
             passphrase: passphrase.unwrap_or_else(|| "".into()),
             inner: builder.build().unwrap(),
             host,
+            is_testnet,
         }
     }
 
@@ -217,10 +220,12 @@ impl Client {
             HeaderValue::from_str(self.passphrase.as_str())?,
         );
         // For demo trading API
-        custom_headers.insert(
-            HeaderName::from_static("x-simulated-trading"),
-            HeaderValue::from_str(&String::from("1"))?,
-        );
+        if self.is_testnet {
+            custom_headers.insert(
+                HeaderName::from_static("x-simulated-trading"),
+                HeaderValue::from_str(&String::from("1"))?,
+            );
+        }
 
         Ok(custom_headers)
     }

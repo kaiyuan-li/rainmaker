@@ -3,6 +3,7 @@ pub struct Config {
     pub rest_api_endpoint: String,
     pub ws_public_endpoint: String,
     pub ws_private_endpoint: String,
+    pub is_testnet: bool,
 }
 
 impl Config {
@@ -25,6 +26,7 @@ impl Config {
             rest_api_endpoint: "https://www.okex.com".into(),
             ws_public_endpoint: "wss://ws.okex.com:8443/ws/v5/public".into(),
             ws_private_endpoint: "wss://ws.okex.com:8443/ws/v5/private".into(),
+            is_testnet: false,
         }
     }
 
@@ -38,6 +40,7 @@ impl Config {
         Config::default()
             .set_ws_public("wss://wspap.okex.com:8443/ws/v5/public?brokerId=9999")
             .set_ws_private("wss://wspap.okex.com:8443/ws/v5/private?brokerId=9999")
+            .set_is_testnet()
     }
 
     pub fn set_rest_api_endpoint<T: Into<String>>(mut self, rest_api_endpoint: T) -> Self {
@@ -52,6 +55,10 @@ impl Config {
 
     pub fn set_ws_private<T: Into<String>>(mut self, ws_endpoint: T) -> Self {
         self.ws_private_endpoint = ws_endpoint.into();
+        self
+    }
+    pub fn set_is_testnet(mut self) -> Self {
+        self.is_testnet = true;
         self
     }
 }
