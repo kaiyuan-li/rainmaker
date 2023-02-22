@@ -203,14 +203,17 @@ impl AvellanedaStoikov {
     }
 
     pub async fn run_forever(&mut self, mut rx: mpsc::Receiver<FuturesWebsocketEvent>) {
-
         let account_balance = self.account_client.account_balance().await.unwrap();
 
         info!("account_balance: {:?}", account_balance);
 
         let pair = "DOGEUSDT";
 
-        let positions = self.account_client.position_information(pair).await.unwrap();
+        let positions = self
+            .account_client
+            .position_information(pair)
+            .await
+            .unwrap();
 
         info!("position_information: {:?}", positions);
 
@@ -560,45 +563,45 @@ impl AvellanedaStoikov {
     }
 
     /// https://github.com/TommasoBelluzzo/HistoricalVolatility
-    fn calculate_p_volatility(&mut self) -> Option<f64> {
-        let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 10.;
-        let mut parkinson_hv = 0.;
-        for chunk in wap_vec.chunks(30) {
-            let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
-                / chunk.iter().cloned().fold(0. / 0., f64::min))
-            .ln();
-            let res = hl.powi(2);
-            parkinson_hv += res;
-        }
-        let res = (parkinson_hv / (4. * t * (2f64.ln()))).sqrt();
+    // fn calculate_p_volatility(&mut self) -> Option<f64> {
+    //     let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
+    //     let t = 10.;
+    //     let mut parkinson_hv = 0.;
+    //     for chunk in wap_vec.chunks(30) {
+    //         let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
+    //             / chunk.iter().cloned().fold(0. / 0., f64::min))
+    //         .ln();
+    //         let res = hl.powi(2);
+    //         parkinson_hv += res;
+    //     }
+    //     let res = (parkinson_hv / (4. * t * (2f64.ln()))).sqrt();
 
-        Some(res)
-    }
+    //     Some(res)
+    // }
 
-    fn calculate_gk_volatility(&mut self) -> Option<f64> {
-        let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 10.;
+    // fn calculate_gk_volatility(&mut self) -> Option<f64> {
+    //     let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
+    //     let t = 10.;
 
-        let mut garman_klass_hv = 0.;
-        for chunk in wap_vec.chunks(30) {
-            let co = (chunk.last().unwrap() / chunk.first().unwrap()).ln();
-            let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
-                / chunk.iter().cloned().fold(0. / 0., f64::min))
-            .ln();
-            let res = 0.5 * hl.powi(2) - ((2. * 2f64.ln()) - 1.) * co.powi(2);
-            garman_klass_hv += res;
-        }
-        let res = (garman_klass_hv / t).sqrt();
+    //     let mut garman_klass_hv = 0.;
+    //     for chunk in wap_vec.chunks(30) {
+    //         let co = (chunk.last().unwrap() / chunk.first().unwrap()).ln();
+    //         let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
+    //             / chunk.iter().cloned().fold(0. / 0., f64::min))
+    //         .ln();
+    //         let res = 0.5 * hl.powi(2) - ((2. * 2f64.ln()) - 1.) * co.powi(2);
+    //         garman_klass_hv += res;
+    //     }
+    //     let res = (garman_klass_hv / t).sqrt();
 
-        Some(res)
-    }
+    //     Some(res)
+    // }
 
     fn calculate_spread(&mut self) -> Spread {
         // self.sigma = self.calculate_tv_mean().unwrap();
         // self.sigma = self.calculate_p_volatility().unwrap();
-        self.sigma = self.calculate_gk_volatility().unwrap();
-        // self.sigma = self.calculate_spread_volatility().unwrap();
+        // self.sigma = self.calculate_gk_volatility().unwrap();
+        self.sigma = self.calculate_spread_volatility().unwrap();
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
         let q_fix = self.position.position_amount / self.order_qty;
 

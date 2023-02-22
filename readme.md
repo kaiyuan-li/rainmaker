@@ -1,11 +1,11 @@
 # Read Me
 
 ## Commands
-
-* Build it: `cargo build`
-
-* Run it: `cargo run --bin as_okex okex_config.json`
-
-* Build the docker image: `docker build -t rmr .`
-
-* Run with docker compose: `sudo docker-compose run --rm rainmaker`
+Build image
+```
+docker build -t rainmaker_okx:waterdrop .
+```
+## Run image using an external json config
+```
+docker run -v <PATH/TO/JSON>:/app/data -it rainmaker_okx:waterdrop /usr/local/bin/as_okex /app/data/okex_config.json
+```

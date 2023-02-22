@@ -22,6 +22,7 @@ pub struct Client {
     passphrase: String,
     inner: reqwest::Client,
     host: String,
+    is_testnet: bool,
 }
 
 impl Client {
@@ -33,6 +34,7 @@ impl Client {
         secret_key: Option<String>,
         passphrase: Option<String>,
         host: String,
+        is_testnet: bool,
     ) -> Self {
         let builder: reqwest::ClientBuilder = reqwest::ClientBuilder::new();
         let builder = builder.timeout(Duration::from_secs(2));
@@ -42,6 +44,7 @@ impl Client {
             passphrase: passphrase.unwrap_or_else(|| "".into()),
             inner: builder.build().unwrap(),
             host,
+            is_testnet,
         }
     }
 
@@ -88,13 +91,15 @@ impl Client {
     pub async fn post_signed(&self, endpoint: &str, request_body: String) -> Result<String> {
         let url = format!("{}{}", self.host, endpoint);
 
-        println!("post_signed - request_body: {}", request_body);
+        let headers = self.build_signed_headers(true, Method::POST, endpoint, &request_body)?;
+        println!("post_signed --- request_body: {} ", request_body);
+        // println!("post_signed --- header: {:?}, --- request_body: {} ", headers, request_body);
 
         let response = self
             .inner
             .clone()
             .post(url.as_str())
-            .headers(self.build_signed_headers(true, Method::POST, endpoint, &request_body)?)
+            .headers(headers)
             .body(request_body)
             .send()
             .await?;
@@ -121,7 +126,7 @@ impl Client {
         if !request.is_empty() {
             url.push_str(format!("?{}", request).as_str());
         }
-
+        println!("{:?}", url);
         let response = reqwest::get(url.as_str()).await?;
 
         self.handler(response).await
@@ -143,6 +148,7 @@ impl Client {
         } else {
             String::new()
         };
+        println!("{:?}", req);
         self.get_p(endpoint, req.as_str()).await
     }
 
@@ -213,6 +219,13 @@ impl Client {
             HeaderName::from_static("ok-access-passphrase"),
             HeaderValue::from_str(self.passphrase.as_str())?,
         );
+        // For demo trading API
+        if self.is_testnet {
+            custom_headers.insert(
+                HeaderName::from_static("x-simulated-trading"),
+                HeaderValue::from_str(&String::from("1"))?,
+            );
+        }
 
         Ok(custom_headers)
     }

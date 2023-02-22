@@ -85,7 +85,7 @@ impl Account {
     {
         let order: OrderRequest = OrderRequest {
             symbol: symbol.into(),
-            trade_mode: TradeMode::Cross,
+            trade_mode: TradeMode::Cash,
             currency: None,
             client_order_id: Some(client_order_id.into()),
             tag: None,
@@ -114,7 +114,7 @@ impl Account {
     {
         let order: OrderRequest = OrderRequest {
             symbol: symbol.into(),
-            trade_mode: TradeMode::Cross,
+            trade_mode: TradeMode::Cash,
             currency: None,
             client_order_id: Some(client_order_id.into()),
             tag: None,
@@ -136,7 +136,7 @@ impl Account {
     {
         let order = OrderRequest {
             symbol: symbol.into(),
-            trade_mode: TradeMode::Cross,
+            trade_mode: TradeMode::Cash,
             currency: None,
             client_order_id: None,
             tag: None,
@@ -158,7 +158,7 @@ impl Account {
     {
         let order = OrderRequest {
             symbol: symbol.into(),
-            trade_mode: TradeMode::Cross,
+            trade_mode: TradeMode::Cash,
             currency: None,
             client_order_id: None,
             tag: None,

@@ -1,0 +1,21 @@
+{
+    "api_key": "2a33884a-09c4-40d2-88ff-fc5a804cb6bf",
+    "secret_key": "C171FD51E4FE0809299C2EEB42E3D967",
+    "passphrase": "Loss$isnotaBigdeal3",
+    "base_asset": "KNC",
+    "quote_asset": "USDT",
+    "order_qty": 1,
+    "tick_size": 0.000001, 
+    "n_spreads": 10,
+    "estimate_window": 360000,
+    "period": 10000,
+    "sigma_tick_period": 550,
+    "gamma": 0.2,
+    "sigma_multiplier": 1,
+    "stoploss": 0.6,
+    "stoploss_sleep": 300000,
+    "stopprofit": 1.2,
+    "trailing_stop": 1.05,
+    "q_max": 1000,
+    "is_testnet": true
+}

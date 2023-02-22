@@ -25,7 +25,6 @@ impl AbstractAkSolver for RegressionAkSolver {
         for i in 0..self.spread_specification.len() {
             tuples.push((self.spread_specification[i], intensities[i].ln()));
         }
-
         let (slope, intercept): (f64, f64) =
             linear_regression_of(&tuples).unwrap_or_else(|_| self.last_valid_value);
 

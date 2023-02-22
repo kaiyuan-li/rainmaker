@@ -33,8 +33,11 @@ impl<WE: serde::de::DeserializeOwned + std::fmt::Debug> WebSockets<WE> {
     /// New websocket holder with default configuration
     /// # Examples
     /// see examples/binance_WebSockets.rs
-    pub fn new(sender: mpsc::Sender<WE>) -> WebSockets<WE> {
-        Self::new_with_options(sender, Config::default())
+    pub fn new(sender: mpsc::Sender<WE>, is_testnet: bool) -> WebSockets<WE> {
+        match is_testnet {
+            true => Self::new_with_options(sender, Config::testnet()),
+            false => Self::new_with_options(sender, Config::default()),
+        }
     }
 
     /// New websocket holder with provided configuration
@@ -47,16 +50,19 @@ impl<WE: serde::de::DeserializeOwned + std::fmt::Debug> WebSockets<WE> {
             conf,
         }
     }
-
     /// Connect to a websocket endpoint
     pub async fn connect(&mut self, endpoint: &str) -> Result<()> {
-        let wss: String = format!("{}/{}", self.conf.ws_endpoint, endpoint);
+        let wss = match endpoint {
+            "public" => Some(&self.conf.ws_public_endpoint),
+            "private" => Some(&self.conf.ws_private_endpoint),
+            _ => None
+        };
 
         let client = Client::builder()
             .max_http_version(awc::http::Version::HTTP_11)
             .finish();
 
-        match client.ws(wss).connect().await {
+        match client.ws(wss.unwrap()).connect().await {
             Ok(answer) => {
                 self.socket = Some(answer);
                 Ok(())
@@ -238,8 +244,7 @@ impl<WE: serde::de::DeserializeOwned + std::fmt::Debug> WebSockets<WE> {
             position_side: None, // None for net mode
             order_type: order_type,
             qty: qty.into(),
-            price: Some(price.into()),
-            reduce_only: None,
+            price: Some(price.into()), reduce_only: None,
             target_currency: None,
         };
         self.place_order(order).await?;

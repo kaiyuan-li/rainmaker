@@ -10,6 +10,7 @@ use exrs::okex_v5::ws_model::OrderBookEvent;
 use exrs::okex_v5::{
     account::Account,
     api::Okex,
+    config::Config,
     rest_model::{OrderCancellation, PositionSide},
     util::get_timestamp,
     ws_model::{
@@ -88,7 +89,8 @@ impl StrategyData {
         self.ask_qty.push_back(best_ask_qty);
         self.bid_price.push_back(best_bid);
         self.bid_qty.push_back(best_bid_qty);
-
+        
+        // Seems to be Reservation price in the original strategy, but the calculation method seems different
         let wap =
             ((best_bid * best_ask_qty) + (best_ask * best_bid_qty)) / (best_bid_qty + best_ask_qty);
         let imb = best_bid_qty / (best_bid_qty + best_ask_qty);
@@ -153,17 +155,18 @@ impl AvellanedaStoikov {
 
         let sf = AkSolverFactory::new(&solver_type);
         let ie = IntensityEstimator::new(
-            config.tick_size.clone(),
-            config.n_spreads.clone(),
-            config.estimate_window.clone(),
-            config.period.clone(),
+            config.tick_size,
+            config.n_spreads,
+            config.estimate_window,
+            config.period,
             sf,
         );
-
+        let api_config = Config::new(config.is_testnet);
         let account_client: Account = Okex::new(
             config.api_key.clone(),
             config.secret_key.clone(),
             config.passphrase.clone(),
+            &api_config,
         );
 
         let tick_round = config
@@ -178,7 +181,7 @@ impl AvellanedaStoikov {
             config.quote_asset.clone()
         );
 
-        println!("pair: {}", pair);
+        debug!("pair: {}", pair);
 
         Box::new(AvellanedaStoikov {
             config: config.clone(),
@@ -196,10 +199,11 @@ impl AvellanedaStoikov {
             n_spreads: config.n_spreads,
             estimate_window: config.estimate_window,
             period: config.period,
-            gamma: 0.1,
+            gamma: config.gamma, // inventory risk aversion parameter, a higher gamma value will result in a more aggressive trading strategy, with larger positions taken in response to market movements.
             sigma_multiplier: config.sigma_multiplier,
             ie: ie,
             sigma: 1.0,
+            // order book liquidity parameters
             buy_a: 0.4,
             buy_k: 0.2,
             sell_a: 0.4,
@@ -229,6 +233,7 @@ impl AvellanedaStoikov {
     pub async fn run_forever(&mut self, mut rx: mpsc::Receiver<WebsocketEvent>) {
         loop {
             if let Some(event) = rx.recv().await {
+                // debug!("Receiving events: {:?}", event);
                 match event {
                     WebsocketEvent::OrderBook(book_event) => {
                         debug!("OrderBook: {:?}", book_event);
@@ -512,8 +517,14 @@ impl AvellanedaStoikov {
                         if spread.ask < 0. {
                             sell_price = ask_price;
                         };
-
+                        // let mut buy_price = util::round_to(last_wap, tick_round);
+                        // In original strategy, Bid offer price = reservation price - optimal spread / 2
                         let mut buy_price = util::round_to(last_wap - spread.bid, tick_round);
+                        debug!(
+                            "buy_price:{}, last_wap:{}, spread.bid:{}",
+                            buy_price, last_wap, spread.bid
+                        );
+
                         if spread.bid < 0. {
                             buy_price = bid_price;
                         };
@@ -664,21 +675,21 @@ impl AvellanedaStoikov {
     }
 
     /// https://github.com/TommasoBelluzzo/HistoricalVolatility
-    fn calculate_p_volatility(&mut self) -> Option<f64> {
-        let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
-        let t = 11.;
-        let mut parkinson_hv = 0.;
-        for chunk in wap_vec.chunks(50) {
-            let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
-                / chunk.iter().cloned().fold(0. / 0., f64::min))
-            .ln();
-            let res = hl.powi(2);
-            parkinson_hv += res;
-        }
-        let res = (parkinson_hv / (4. * t * (2f64.ln()))).sqrt();
+    // fn calculate_p_volatility(&mut self) -> Option<f64> {
+    //     let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
+    //     let t = 11.;
+    //     let mut parkinson_hv = 0.;
+    //     for chunk in wap_vec.chunks(50) {
+    //         let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
+    //             / chunk.iter().cloned().fold(0. / 0., f64::min))
+    //         .ln();
+    //         let res = hl.powi(2);
+    //         parkinson_hv += res;
+    //     }
+    //     let res = (parkinson_hv / (4. * t * (2f64.ln()))).sqrt();
 
-        Some(res)
-    }
+    //     Some(res)
+    // }
 
     fn calculate_gk_volatility(&mut self) -> Option<f64> {
         let wap_vec = self.strategy_data.wap.iter().cloned().collect::<Vec<f64>>();
@@ -687,8 +698,8 @@ impl AvellanedaStoikov {
         let mut garman_klass_hv = 0.;
         for chunk in wap_vec.chunks(5) {
             let co = (chunk.last().unwrap() / chunk.first().unwrap()).ln();
-            let hl = (chunk.iter().cloned().fold(0. / 0., f64::max)
-                / chunk.iter().cloned().fold(0. / 0., f64::min))
+            let hl = (chunk.iter().cloned().fold(f64::NEG_INFINITY, f64::max)
+                / chunk.iter().cloned().fold(f64::INFINITY, f64::min))
             .ln();
             let res = 0.5 * hl.powi(2) - ((2. * 2f64.ln()) - 1.) * co.powi(2);
             garman_klass_hv += res;
@@ -706,11 +717,11 @@ impl AvellanedaStoikov {
         let sigma_fix = self.sigma * self.sigma_multiplier.clone();
         let q_fix = self.position.position_amount; // / self.order_qty;
 
-        info!(
+        debug!(
             "sigma: {}, sigma_multiplier {}, sigma_fix {}, q {}, q_fix {}",
             self.sigma, self.sigma_multiplier, sigma_fix, self.position.position_amount, q_fix,
         );
-        info!(
+        debug!(
             "buy_k: {}, buy_a: {}, sell_k {}, sell_a {}",
             self.buy_k, self.buy_a, self.sell_k, self.sell_a
         );
@@ -726,8 +737,8 @@ impl AvellanedaStoikov {
                 * ((sigma_fix * sigma_fix * self.gamma) / (2. * self.buy_k * self.buy_a)
                     * (1. + self.gamma / self.buy_k).powf(1. + self.buy_k / self.gamma))
                 .sqrt());
-
-        Spread { ask: ask, bid: bid }
+        debug!("bid: {}, ask: {}", bid, ask);
+        Spread { ask, bid }
     }
 }
 

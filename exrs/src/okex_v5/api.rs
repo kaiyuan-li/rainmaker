@@ -11,8 +11,9 @@ pub trait Okex: Sized {
         api_key: Option<String>,
         secret_key: Option<String>,
         passphrase: Option<String>,
+        config: &Config,
     ) -> Self {
-        Self::new_with_config(api_key, secret_key, passphrase, &Config::default())
+        Self::new_with_config(api_key, secret_key, passphrase, config)
     }
 
     /// Create a binance API using environment variables for credentials
@@ -46,6 +47,7 @@ impl Okex for General {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
@@ -64,6 +66,7 @@ impl Okex for Account {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
@@ -82,6 +85,7 @@ impl Okex for Market {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
@@ -100,6 +104,7 @@ impl Okex for UserStream {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
@@ -118,6 +123,7 @@ impl Okex for Margin {
                 secret_key,
                 passphrase,
                 config.rest_api_endpoint.clone(),
+                config.is_testnet,
             ),
         }
     }
